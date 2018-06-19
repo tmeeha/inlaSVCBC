@@ -56,11 +56,11 @@ Work by Thogmartin et al. (2004), Bled et al. (2013), and Smith et al. (2015) of
 Here, we present a different approach for calculating temporal trends in relative abundance, one that takes advantage of both spatial structure in CBC data. This approach borrows components from previous ones, incorporates new components that prioritize robust trend estimation at finer spatial scales, and employs a relatively simple and computationally efficient process. Similar to Bled et al. (2013), we assigned CBC count sites to cells on a uniform grid that covered North America. Like Thogmartin et al. (2004), temporal trends were explicit components of the model. In contrast to previous work, effort and year effects were modeled as random slopes with spatial structure, following a spatially varying coefficient (SVC) approach (Congdon 2014). Finally, unlike prior studies using MCMC, we used integrated nested Laplace approximation (INLA) to estimate Bayesian posteriors for model parameters, which led to a considerable decrease in computing time.
 
 \section{Model}
-We modeled Christmas Bird Counts, $y_{i,k,t}$ for grid cell \textit{i} encompassing count circle \textit{k} during year \textit{t}, as an overdispersed Poisson random variable (Link and Sauer 2002, Link et al. 2006). Expected values for counts per grid cell, $\lambda_{i,t}$, were assumed to be a function of spatially-structured grid-cell, count-effort, and year effects. The linear predictor for $\lambda_{i,t}$ took the form
+We modeled Christmas Bird Counts, $y_{i,k,t}$ for grid cell \textit{i} encompassing count circle \textit{k} during year \textit{t}, as random variable from a negative binomial distribution. Expected values for counts per grid cell, $\mu_{i,t}$, were assumed to be a function of spatially-structured grid-cell, count-effort, and year effects. The linear predictor for $\mu_{i,t}$ took the form
 
-$$\text{log}(\lambda_{i,t}) = \alpha _{i} + \epsilon_{i} \text{log}(E_{i,k,t}) + \tau_{i}T_{i,k,t} + \omega_{i,k,t}.$$
+$$\text{log}(\mu_{i,t}) = \alpha _{i} + \epsilon_{i} \text{log}(E_{i,k,t}) + \tau_{i}T_{i,k,t} + \kappa_{k}.$$
 
-$\alpha_i$ was a cell-specific relative abundance term that comprised the sum of three components, $\alpha_i = \alpha_0 + \psi_i + \upsilon_i$. The first component, $\alpha_0$, was a global intercept averaged over all grid cells and years. The second component, $\psi_i$, was an exchangeable random effect per cell, modeling deviations from the global intercept as unstructured and normally distributed. The third component $\upsilon_i$ was a spatially-structured random effect per cell, modeling deviations from the global intercept with ICAR structure, where values came from a normal distribution, with a conditional mean related to the average of adjacent cells, and with conditional variance proportional to the variance across adjacent cells and inversely proportional to the number of adjacent cells. Spatial structure was incorporated into $\alpha_i$ to allow for information about relative abundance to be shared across neighboring cells.
+$\alpha_i$ was a cell-specific relative abundance term that comprised the sum of two components, $\alpha_i = \upsilon_0 + \upsilon_i$. The first component, $\upsilon_0$, was a global intercept averaged over all grid cells and years. The second component, $\upsilon_i$, was a spatially-structured random effect per cell, modeling deviations from the global intercept with ICAR structure, where values came from a normal distribution, with a conditional mean related to the average of adjacent cells, and with conditional variance proportional to the variance across adjacent cells and inversely proportional to the number of adjacent cells. Spatial structure was incorporated into $\alpha_i$ to allow for information about relative abundance to be shared across neighboring cells.
 
 \begin{figure}[t]
   \centering
@@ -71,11 +71,11 @@ $\alpha_i$ was a cell-specific relative abundance term that comprised the sum of
   \caption{Map of American Robin posterior median trends per BCR, produced using the standard analysis approach (A) and the one demonstrated here (B). (C) Bivariate plot of the trends mapped in (A) and (B), with 1:1 line.}
 \end{figure}
 
-$\epsilon_i$ was a cell-specific random slope term for the effect of effort on counts. $\epsilon_i$ was also a composite term, comprising the sum of two components, $\epsilon_i = \eta_i + \kappa_i$. The first component, $\eta_i$, was an exchangeable random slope per cell, modeling local variation in the effort effect as unstructured and normally distributed. The second component, $\kappa_i$, an SVC term, was a spatially-structured random slope per cell, modeling local variation in the effort effect with ICAR structure, where values came from a normal distribution, with a conditional mean related to the average of adjacent cells, and with conditional variance proportional to the variance across adjacent cells and inversely proportional to the number of adjacent cells. Spatial structure was incorporated into $\epsilon_i$ to allow for information about the effort effect to be shared across neighboring cells. Effort was represented by $E_{i,j,k}$, the number of party hours expended during a count, where a party hour was the count effort of one party of unspecified size for one hour. Pairing log-transformed counts with log-transformed effort in the linear predictor yielded a power function for effort correction, a flexible form that accommodated a decreasing, linear, or increasing impact of effort on expected counts (Link et al. 2006, Soykan et al. 2016).  
+$\epsilon_i$ was a cell-specific random slope term for the effect of effort on counts. $\epsilon_i$ was also a composite term, comprising the sum of two components, $\epsilon_i = \psi_0 + \psi_i$. The first component, $\psi_0$, was a global effect of effort derived over all grid cells. The second component, $\psi_i$, an SVC term, was a spatially-structured random slope per cell, modeling local variation in the effort effect with ICAR structure, where values came from a normal distribution, with a conditional mean related to the average of adjacent cells, and with conditional variance proportional to the variance across adjacent cells and inversely proportional to the number of adjacent cells. Spatial structure was incorporated into $\epsilon_i$ to allow for information about the effort effect to be shared across neighboring cells. Effort was represented by $E_{i,j,k}$, the number of party hours expended during a count, where a party hour was the count effort of one party of unspecified size for one hour. Pairing log-transformed counts with log-transformed effort in the linear predictor yielded a power function for effort correction, a flexible form that accommodated a decreasing, linear, or increasing impact of effort on expected counts (Link et al. 2006, Soykan et al. 2016).  
 
-$\tau_i$ was a cell-specific random slope for the effect of year on counts. Similar to $\epsilon_i$, $\tau_i$ was a composite term, comprising the sum of two components, $\tau_i = \gamma_i + \delta_i$. The first component, $\gamma_i$, was an exchangeable random slope per cell, modeling local variation in the year effect as unstructured and normally distributed. The second component, $\delta_i$, an SVC term, was a spatially-structured random slope per cell, modeling local variation in the year effect with ICAR structure, where values came from a normal distribution, with a conditional mean related to the average of adjacent cells, and with conditional variance proportional to the variance across adjacent cells and inversely proportional to the number of adjacent cells. Spatial structure was incorporated into $\tau_i$ to allow for information about the year effect to be shared across neighboring cells. Year, represented by $T$, was transformed before analysis such that $\text{max}(T) = 0$, and each preceding year took an increasingly-negative integer value. Given the scaling of effort and year variables, $\text{exp}(\alpha_i)$ could be interpreted as cell-specific expected counts given one party hour of effort during the final year in a time series.
+$\tau_i$ was a cell-specific random slope for the effect of year on counts. Similar to $\epsilon_i$, $\tau_i$ was a composite term, comprising the sum of two components, $\tau_i = \delta_0 + \delta_i$. The first component, $\delta_0$, was a global effect of year derived over all grid cells. The second component, $\delta_i$, an SVC term, was a spatially-structured random slope per cell, modeling local variation in the year effect with ICAR structure, where values came from a normal distribution, with a conditional mean related to the average of adjacent cells, and with conditional variance proportional to the variance across adjacent cells and inversely proportional to the number of adjacent cells. Spatial structure was incorporated into $\tau_i$ to allow for information about the year effect to be shared across neighboring cells. Year, represented by $T$, was transformed before analysis such that $\text{max}(T) = 0$, and each preceding year took an increasingly-negative integer value. Given the scaling of effort and year variables, $\text{exp}(\alpha_i)$ could be interpreted as cell-specific expected counts given one party hour of effort during the final year in a time series.
 
-The final term in the model, $\varepsilon_{i,k,t}$, was an overdispersion term, allowing data with excessive zeros to be modeled appropriately using a Poisson distribution.
+The final term in the model, $\kappa_{k}$, was a random effect that accounted for variation in relative abundance among circles, possibly due to differences in habitat conditions or observer experience.
 
 
 \section{Data}
@@ -89,56 +89,63 @@ Locations of the 3195 count circles (Figure 2A) were mapped using the North Amer
 Below is the code for running the model with INLA, followed by some summary plots for the input data and results. Hopefully, this code corresponds with the model described above. Note that, for initial testing, I am using the "Empirical Bayes" option, for speed. The test model takes a bout 20 minutes to run. Eventually, I will get CPO to asses model fit. 
 
 \begin{verbatim}
-# specify model
 form1 <- count ~
-  # global intercept
-    1 +
-  # cell unstructured and ICAR random effects
-    f(grid_id1, model="bym2", constr=T, graph=g, scale.model=TRUE,
-      hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01)))) +
-  # cell unstructured and ICAR random effort slopes
-    f(grid_id2, log_hrs, model="bym2", graph=g, constr=F, scale.model=TRUE,
-      hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01)))) +
-  # cell unstructured and ICAR random year slopes
-    f(grid_id3, std_yr, model="bym2", graph=g, constr=F, scale.model=TRUE,
-      hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01)))) +
-  # overdispersion effect
-    f(obs, model="iid", constr=T)
+  # global effects
+    1 + log_hrs + std_yr +
+  # cell ICAR random effect
+    f(grid_id1, model="besag", graph=g, scale.model=TRUE,
+      hyper = list(prec = list(
+      prior = "pc.prec",
+      param = c(1, 0.01)))) +
+  # cell ICAR random effort slope
+    f(grid_id2, log_hrs, model="besag", graph=g, scale.model=TRUE,
+      hyper = list(prec = list(
+      prior = "pc.prec",
+      param = c(1, 0.01)))) +
+  # cell ICAR random year slope
+    f(grid_id3, std_yr, model="besag", graph=g, scale.model=TRUE,
+      hyper = list(prec = list(
+      prior = "pc.prec",
+      param = c(1, 0.01)))) +
+  # random circle effect
+    f(circle, model="iid",
+      hyper = list(prec = list(
+      prior = "pc.prec", param = c(1, 0.01))))
 
 # run model
-out1 <- inla(form1, family="poisson", data=d9,
-          control.predictor=list(compute=F),
-          control.compute=list(dic=F, cpo=F, waic=F, config=T),
+out1 <- inla(form1, family="nbinomial", data=modeling_data,
+          control.predictor=list(compute=T, link=1),
+          control.compute=list(cpo=T, waic=T, config=T),
           control.inla=list(int.strategy='eb'),
-          num.threads=2,
-          verbose=T)
+          num.threads=2, verbose=T)
 summary(out1)
 
 # view output
 Time used:
-Pre-processing    Running inla      Post-processing           Total 
-        44.338        3075.197              10.046         3129.582 
+Pre-processing    Running inla Post-processing           Total 
+1.258             1688.217               6.820        1696.295 
 
 Fixed effects:
-              mean     sd    0.025quant    0.5quant    0.975quant
-(Intercept) -2.082    0.1        -2.279      -2.082        -1.886
+            mean    sd     0.025quant  0.5quant     0.975quant
+(Intercept) 0.479 0.118         0.247     0.479          0.710
+log_hrs     0.798 0.027         0.745     0.798          0.852
+std_yr      0.022 0.002         0.018     0.022          0.026
 
 Random effects:
 Name	     Model
-grid_id1   BYM2 model 
-grid_id2   BYM2 model 
-grid_id3   BYM2 model 
-obs        IID model 
+grid_id1   Besags ICAR model 
+grid_id2   Besags ICAR model 
+grid_id3   Besags ICAR model 
+circle     IID model 
 
 Model hyperparameters:
-                             mean     sd 0.025quant 0.5quant 0.975quant
-Precision for grid_id1      0.169  0.012      0.144    0.169      0.191
-Phi for grid_id1            0.962  0.032      0.880    0.971      0.998
-Precision for grid_id2      4.734  0.444      3.858    4.741      5.600
-Phi for grid_id2            0.642  0.077      0.487    0.643      0.788
-Precision for grid_id3    673.379 61.179    548.944  676.131    786.692
-Phi for grid_id3            0.936  0.042      0.823    0.947      0.983
-Precision for obs           0.361  0.002      0.357    0.360      0.366
+                      mean     sd 0.025quant 0.5quant 0.975quant
+(1/overdispersion)   0.514  0.001      0.512    0.514      0.517
+Precision grid_id1   0.378  0.027      0.332    0.376      0.438
+Precision grid_id2  14.329  2.335     10.242   14.160     19.402
+Precision grid_id3 518.794 32.659    464.640  514.958    592.211
+Precision circle     0.909  0.035      0.849    0.906      0.986
+
 \end{verbatim}
 
 
