@@ -291,15 +291,14 @@ modeling_data <- arrange(modeling_data, grid_id, std_yr)
 
 
 # run model and check output ---------------------------------------------------
-out6<- inla(form1, family="nbinomial", data=modeling_data,
-             control.predictor=list(compute=T, link=1),
-             control.compute=list(cpo=T, waic=T, config=T),
-             control.inla=list(int.strategy='eb'),
-             num.threads=2,
+out1<- inla(form1, family="nbinomial", data=modeling_data,
+             # control.predictor=list(compute=T, link=1),
+             control.compute=list(cpo=T, config=T),
+             # control.inla=list(int.strategy='eb'),
+             num.threads=3,
              verbose=T)
 
 # view summaries
-out1 <- out6
 summary(out1, digits=3)
 int <- out1$summary.fixed[1,1]
 eft <- out1$summary.fixed[2,1]
