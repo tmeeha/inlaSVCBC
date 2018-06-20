@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.3.10)  19 JUN 2018 13:53
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.3.10)  20 JUN 2018 12:59
 entering extended mode
 **./meehan_et_al_spatial_CBC_2.tex
 (meehan_et_al_spatial_CBC_2.tex
@@ -283,44 +283,59 @@ Package pdftex.def Info: gridding.pdf used on input line 40.
  [1
 
 {C:/ProgramData/MiKTeX/2.9/pdftex/config/pdftex.map}]
-<trend_and_index.pdf, id=12, 540.60239pt x 394.32986pt>
-File: trend_and_index.pdf Graphic file (type pdf)
-
-<use trend_and_index.pdf>
-Package pdftex.def Info: trend_and_index.pdf used on input line 51.
-(pdftex.def)             Requested size: 429.28616pt x 313.13574pt.
+<tau_alpha.pdf, id=12, 771.26106pt x 532.0492pt>
+File: tau_alpha.pdf Graphic file (type pdf)
+ <use tau_alpha.pdf>
+Package pdftex.def Info: tau_alpha.pdf used on input line 51.
+(pdftex.def)             Requested size: 429.28616pt x 296.14322pt.
  [2 <./different_strata.pdf> <./gridding.pdf
 
 pdfTeX warning: pdflatex.exe (file ./gridding.pdf): PDF inclusion: multiple pdf
 s with page group included in a single page
->] <bcr_comparison.pdf, id=39, 540.60239pt x 412.27895pt>
-File: bcr_comparison.pdf Graphic file (type pdf)
+>] <tau_bcr.pdf, id=39, 758.50883pt x 497.10237pt>
+File: tau_bcr.pdf Graphic file (type pdf)
+ <use tau_bcr.pdf>
+Package pdftex.def Info: tau_bcr.pdf used on input line 69.
+(pdftex.def)             Requested size: 429.28616pt x 281.34122pt.
+ [3 <./tau_alpha.pdf>] <prec_bcr.pdf, id=81, 758.50883pt x 496.90683pt>
+File: prec_bcr.pdf Graphic file (type pdf)
 
-<use bcr_comparison.pdf>
-Package pdftex.def Info: bcr_comparison.pdf used on input line 69.
-(pdftex.def)             Requested size: 429.28616pt x 327.38902pt.
- [3 <./trend_and_index.pdf>] [4 <./bcr_comparison.pdf>] [5] [6] (meehan_et_al_s
-patial_CBC_2.aux) ) 
+<use prec_bcr.pdf>
+Package pdftex.def Info: prec_bcr.pdf used on input line 80.
+(pdftex.def)             Requested size: 429.28616pt x 281.23055pt.
+ [4 <./tau_bcr.pdf>]
+Overfull \hbox (7.37616pt too wide) in paragraph at lines 113--113
+[]    \OT1/cmtt/m/n/10 f(circle, model="iid", hyper=list(prec=list(prior="pc.pr
+ec", param=c(1, 0.01))))[] 
+ []
+
+[5 <./prec_bcr.pdf>] <eps.pdf, id=158, 767.45172pt x 265.45319pt>
+File: eps.pdf Graphic file (type pdf)
+
+<use eps.pdf>
+Package pdftex.def Info: eps.pdf used on input line 147.
+(pdftex.def)             Requested size: 429.28616pt x 148.48668pt.
+ [6 <./eps.pdf>] (meehan_et_al_spatial_CBC_2.aux) ) 
 Here is how much of TeX's memory you used:
- 3722 strings out of 493329
- 55867 string characters out of 3139057
+ 3732 strings out of 493329
+ 55935 string characters out of 3139057
  128239 words of memory out of 3000000
- 7220 multiletter control sequences out of 15000+200000
+ 7228 multiletter control sequences out of 15000+200000
  8922 words of font info for 33 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 42i,7n,40p,1334b,376s stack positions out of 5000i,500n,10000p,200000b,50000s
-<C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/
-cmbx12.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi10.p
-fb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Pr
-ogram Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Program Fil
-es/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Program Files/MiKTeX
- 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb><C:/Program Files/MiKTeX 2.9/font
-s/type1/public/amsfonts/cm/cmr7.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/pu
-blic/amsfonts/cm/cmti10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/ams
-fonts/cm/cmtt10.pfb>
-Output written on meehan_et_al_spatial_CBC_2.pdf (6 pages, 2362015 bytes).
+ 42i,7n,40p,1325b,376s stack positions out of 5000i,500n,10000p,200000b,50000s
+<C:/Program Files/MiKTeX 2.9
+/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Program Files/MiKTeX 2.9/fonts/t
+ype1/public/amsfonts/cm/cmmi10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/pub
+lic/amsfonts/cm/cmmi7.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfo
+nts/cm/cmr10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cm
+r12.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb><
+C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Program
+ Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Program Files/M
+iKTeX 2.9/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
+Output written on meehan_et_al_spatial_CBC_2.pdf (6 pages, 2563490 bytes).
 PDF statistics:
- 152 PDF objects out of 1000 (max. 8388607)
+ 208 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 21 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 31 words of extra memory for PDF output out of 10000 (max. 10000000)
 

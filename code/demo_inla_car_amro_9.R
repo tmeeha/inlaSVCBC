@@ -395,62 +395,84 @@ bcr_sf <- as(bcr_map, "sf")
 results_cells <- merge(modeling_cells, post_sum)
 res_sf <- as(results_cells, "sf")
 
+# filter out empty cells
+hits1 <- which(!is.na(over(modeling_cells, sd2)["grid_id"])==T)
+modeling_cells <- modeling_cells[hits1,]
+plot(modeling_cells)
+plot(sd2, add=T, pch=16, cex=0.5)
+post_sum <- post_sum[hits1,]
+summary(post_sum)
+
 # map tau
 tau1 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=res_sf, aes(fill=med_tau), col="gray40") +
-  scale_fill_gradient2("Tau", low = muted("blue"), mid = "white",
-                         high = muted("red"), midpoint = 0, space = "Lab",
+  geom_sf(data=res_sf, aes(fill=med_tau), col="gray40", size=0.3) +
+  scale_fill_gradient2("Tau\n(% per year)", low = ("royalblue4"), mid = "white",
+                         high = ("red4"), midpoint = 0, space = "Lab",
                          na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 tau2 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=res_sf, aes(fill=prec_tau), col="gray40") +
-  scale_fill_distiller("Interval\nwidth", palette="Greens", direction=1,
-                       breaks=seq(0, 15, 5), na.value="gray40") +
+  geom_sf(data=res_sf, aes(fill=prec_tau), col="gray40", size=0.3) +
+  scale_fill_gradient2("Tau\ncredible\ninterval\nwidth\n(% per year)",
+                       low = ("purple4"), mid = "white",
+                       high = ("green4"), midpoint = 6, space = "Lab",
+                       na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 tau3 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=res_sf, aes(fill=sig_tau), col="gray40") +
-  scale_fill_gradient2("Significant\ntau", low = muted("blue"), mid = "gray95",
-                       high = muted("red"), midpoint = 0, space = "Lab",
+  geom_sf(data=res_sf, aes(fill=sig_tau), col="gray40", size=0.3) +
+  scale_fill_gradient2("Significant tau\n(% per year)",
+                       low = muted("royalblue4"), mid = "gray95",
+                       high = muted("red4"), midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-multiplot(tau1, tau3, tau2, cols=2)
+#multiplot(tau1, tau3, tau2, cols=2)
 
 # map epsilon
 eps1 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=res_sf, aes(fill=med_eps), col="gray40") +
-  scale_fill_gradient2("Epsilon", low = muted("blue"), mid = "white",
-                       high = muted("red"), midpoint = 1, space = "Lab",
+  geom_sf(data=res_sf, aes(fill=med_eps), col="gray40", size=0.3) +
+  scale_fill_gradient2("Epsilon", low = muted("purple4"), mid = "white",
+                       high = muted("green4"), midpoint = 1, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 eps2 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=res_sf, aes(fill=prec_eps), col="gray40") +
-  scale_fill_distiller("Interval\nwidth", palette="Greens", direction=1,
-                       breaks=seq(0, 1.2, 0.4), na.value="gray40") +
+  geom_sf(data=res_sf, aes(fill=prec_eps), col="gray40", size=0.3) +
+  scale_fill_gradient2("Epsilon\ninterval\nwidth", low = muted("purple4"),
+                       mid = "white",
+                       high = muted("orangered1"), midpoint = 0.5, space = "Lab",
+                       na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 eps3 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=res_sf, aes(fill=sig_eps), col="gray40") +
-  scale_fill_gradient2("Significant\nepsilon", low = muted("blue"), mid = "white",
-                       high = muted("red"), midpoint = 1, space = "Lab",
+  geom_sf(data=res_sf, aes(fill=sig_eps), col="gray40", size=0.3) +
+  scale_fill_gradient2("Significant\nepsilon", low = muted("purple4"), mid = "white",
+                       high = muted("green4"), midpoint = 1, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-multiplot(eps1, eps3, cols=2)
+#multiplot(eps1, eps3, cols=2)
 
 # map alpha
 alph1 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=res_sf, aes(fill=med_alpha*100), col="gray40") +
-  scale_fill_gradient2("Alpha per\n100 hours", low = muted("blue"), mid = "white",
-                       high = muted("red"), midpoint = 4.6, space = "Lab",
+  geom_sf(data=res_sf, aes(fill=med_alpha*100), col="gray40", size=0.3) +
+  scale_fill_gradient2("Alpha per\n100 hours", low = "tan4", mid = "white",
+                       high = "green4", midpoint = 4.6, space = "Lab",
                        na.value = "grey40", guide = "colourbar", trans="log",
                        breaks=c(0.2, 5, 100, 2000)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-multiplot(alph1, alph1, alph1, cols=2)
+#multiplot(alph1, alph1, alph1, cols=2)
+
+# print cell maps
+pdf("tau_alpha.pdf", height=7.5, width=10.5)
+multiplot(tau1, tau3, tau2, alph1, cols=2)
+dev.off()
+
+pdf("eps.pdf", height=3.75, width=10.5)
+multiplot(eps1, eps3, cols=2)
+dev.off()
 
 
 
@@ -475,17 +497,17 @@ summary(compare_bcr_wide)
 names(compare_bcr_wide)
 bcr_tau <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=compare_bcr_wide, aes(fill=new_med_tau), col="gray40") +
-  scale_fill_gradient2("Tau", low = muted("blue"), mid = "white",
-                       high = muted("red"), midpoint = 0, space = "Lab",
+  geom_sf(data=compare_bcr_wide, aes(fill=new_med_tau), col="gray40", size=0.3) +
+  scale_fill_gradient2("Tau\n(% per year)", low = "royalblue4", mid = "white",
+                       high = "red4", midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar",
                        limits=c(-8, 15)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 bcr_trend <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=compare_bcr_wide, aes(fill=std_med), col="gray40") +
-  scale_fill_gradient2("Standard\ntrend", low = muted("blue"), mid = "white",
-                       high = muted("red"), midpoint = 0, space = "Lab",
+  geom_sf(data=compare_bcr_wide, aes(fill=std_med), col="gray40", size=0.3) +
+  scale_fill_gradient2("Standard\ntrend\n(% per year)", low = "royalblue4", mid = "white",
+                       high = "red4", midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar",
                        limits=c(-8, 15)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
@@ -496,10 +518,14 @@ bcr_comp <- ggplot() +
   geom_hline(yintercept=0, lty=2, col="gray70") +
   geom_vline(xintercept=0, lty=2, col="gray70") +
   xlim(c(-8, 15)) + ylim(c(-8, 15)) +
-  ylab("BCR trend, standard method") + xlab("BCR trend, SVC model") +
+  ylab("Standard trend (% per year)") + xlab("Tau (% per year)") +
   geom_point(data=compare_bcr_wide, aes(x=new_med_tau, y=std_med),
              size=3, col="gray20")
-multiplot(bcr_tau, bcr_trend, cols=2)
+
+# print cell maps
+pdf("tau_bcr.pdf", height=7.5, width=10.5)
+multiplot(bcr_tau, bcr_comp, bcr_trend, cols=2)
+dev.off()
 
 # correlation between trends
 cor.test(x=compare_bcr_wide$new_med_tau, compare_bcr_wide$std_med, method="spearman")
@@ -511,130 +537,44 @@ compare_bcr_long <- as.data.frame(compare_bcr_wide) %>%
 compare_bcr_long$Category <- factor(compare_bcr_long$Category)
 compare_bcr_long$Category <- factor(compare_bcr_long$Category,
                                     levels(compare_bcr_long$Category)[c(4,3,2,1)])
-ggplot(data=compare_bcr_long) +
+
+# histogram
+svc_prec <- ggplot(data=compare_bcr_long) +
   geom_boxplot(aes(x=Category, y=Precision), col="gray20") +
-  ylab("Confidence interval width (%)") + xlab("") +
+  ylab("Credible interval width (% per year)") + xlab("Method") +
   scale_x_discrete(labels = c("std_prec" = "Standard",
                               "new_min_prec" = "SVC minimum",
                               "new_med_prec" = "SVC median",
                               "new_max_prec" = "SVC maximum"))
-# std prec map
-ggplot() +
-  geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=compare_bcr_wide, aes(fill=std_prec), col="gray40") +
-  scale_fill_gradient2("Standard\ninterval\nwidth", low = muted("blue"), mid = "white",
-                       high = muted("red"), midpoint = 5, space = "Lab",
-                       na.value = "grey40", guide = "colourbar",
-                       limits=c(1, 20)) +
-  theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 
-# new prec map
-ggplot() +
+# std prec map
+std_prec_map <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=compare_bcr_wide, aes(fill=new_med_prec), col="gray40") +
-  scale_fill_gradient2("Standard\ninterval\nwidth", low = muted("blue"), mid = "white",
-                       high = muted("red"), midpoint = 5, space = "Lab",
+  geom_sf(data=compare_bcr_wide, aes(fill=std_prec), col="gray40", size=0.3) +
+  scale_fill_gradient2("Standard\ninterval\nwidth\n(% per year)",
+                       low = "green4", mid = "white",
+                       high = "purple4", midpoint = 6, space = "Lab",
                        na.value = "grey40", guide = "colourbar",
                        limits=c(1, 20)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 
 # new prec grid
-ggplot() +
+new_prec_grid <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=res_sf, aes(fill=prec_tau), col="gray40") +
-  scale_fill_gradient2("SVC\ninterval\nwidth", low = muted("blue"), mid = "white",
-                       high = muted("red"), midpoint = 7, space = "Lab",
+  geom_sf(data=res_sf, aes(fill=prec_tau), col="gray40", size=0.3) +
+  scale_fill_gradient2("SVC\ninterval\nwidth\n(% per year)", low = "green4", mid = "white",
+                       high = "purple4", midpoint = 6, space = "Lab",
                        na.value = "grey40", guide = "colourbar",
                        limits=c(1, 20)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 
-
-
-# filter out empty cells -------------------------------------------------------
-hits1 <- which(!is.na(over(modeling_cells, sd2)["grid_id"])==T)
-hit_cells <- modeling_cells[hits1,]
-plot(hit_cells)
-plot(sd2, add=T, pch=16, cex=0.5)
-hit_sum <- post_sum[hits1,]
-
-
-intsamps_ag <- intsamps_ag[hits1,]
-id1samps_ag <- id1samps_ag[hits1,]
-id2samps_ag <- id2samps_ag[hits1,]
-id3samps_ag <- id3samps_ag[hits1,]
+# print cell maps
+pdf("prec_bcr.pdf", height=7.5, width=10.5)
+multiplot(new_prec_grid, svc_prec, std_prec_map, cols=2)
+dev.off()
 
 
 
-
-
-# # scale up to BCR and compare --------------------------------------------------
-# # merge aggregation info
-# n_keys <- length(grid_key)
-# intsamps_ag <- as.data.frame(cbind(grid_key, intsamps))
-# epssamps_ag <- as.data.frame(cbind(grid_key, epssamps))
-# yrsamps_ag <- as.data.frame(cbind(grid_key, yrsamps))
-# id1samps_ag <- as.data.frame(cbind(grid_key, id1samps))
-# id2samps_ag <- as.data.frame(cbind(grid_key, id2samps))
-# id3samps_ag <- as.data.frame(cbind(grid_key, id3samps))
-#
-# # # filter for observed cells
-# # hits1 <- which(!is.na(over(modeling_cells, sd2)["grid_id"])==T)
-# # intsamps_ag <- intsamps_ag[hits1,]
-# # id1samps_ag <- id1samps_ag[hits1,]
-# # id2samps_ag <- id2samps_ag[hits1,]
-# # id3samps_ag <- id3samps_ag[hits1,]
-#
-# # process alpha samples
-# bcrs <- unique(id1samps_ag$bcr)
-# bcr_par_sum <- NULL
-# for(i in 1:length(bcrs)){
-#   grab1 <- which(id1samps_ag$bcr==as.numeric(bcrs[i]))
-#   l1 <- as.matrix(id1samps_ag[grab1, c((n_keys+1):(n_keys+posterior_ss))])
-#   al1 <- t(apply(l1, 1, function(x) x + as.numeric(intsamps)))
-#   al2 <- c(exp(al1))
-#   med_alpha <- median(al2, na.rm=T)
-#   lcl_alpha <- quantile(al2, probs=0.025)
-#   ucl_alpha <- quantile(al2, probs=0.975)
-#   prec_alpha <- ucl_alpha - lcl_alpha
-#   c1 <- data.frame(bcr=bcrs[i], par="alpha", med=med_alpha, lcl=lcl_alpha,
-#                    ucl=ucl_alpha, prec=prec_alpha)
-#   row.names(c1) <- NULL
-#   bcr_par_sum <- rbind(bcr_par_sum, c1)
-#
-# }
-# for(i in 1:length(bcrs)){
-#   grab1 <- which(id2samps_ag$bcr==as.numeric(bcrs[i]))
-#   l1 <- as.matrix(id2samps_ag[grab1, c((n_keys+1):(n_keys+posterior_ss))])
-#   al1 <- t(apply(l1, 1, function(x) x + as.numeric(epssamps)))
-#   al2 <- c(al1)
-#   med_eps <- median(al2, na.rm=T)
-#   lcl_eps <- quantile(al2, probs=0.025)
-#   ucl_eps <- quantile(al2, probs=0.975)
-#   prec_eps <- ucl_eps - lcl_eps
-#   c1 <- data.frame(bcr=bcrs[i], par="eps", med=med_eps, lcl=lcl_eps,
-#                    ucl=ucl_eps, prec=prec_eps)
-#   row.names(c1) <- NULL
-#   bcr_par_sum <- rbind(bcr_par_sum, c1)
-# }
-# for(i in 1:length(bcrs)){
-#   grab1 <- which(id3samps_ag$bcr==as.numeric(bcrs[i]))
-#   l1 <- as.matrix(id3samps_ag[grab1, c((n_keys+1):(n_keys+posterior_ss))])
-#   al1 <- t(apply(l1, 1, function(x) x + as.numeric(yrsamps)))
-#   al1 <- (exp(l1) - 1) * 100
-#   al2 <- al1
-#   med_tau <- median(al2, na.rm=T)
-#   lcl_tau <- quantile(al2, probs=0.025)
-#   ucl_tau <- quantile(al2, probs=0.975)
-#   prec_tau <- ucl_tau - lcl_tau
-#   c1 <- data.frame(bcr=bcrs[i], par="tau", med=med_tau, lcl=lcl_tau,
-#                    ucl=ucl_tau, prec=prec_tau)
-#   row.names(c1) <- NULL
-#   bcr_par_sum <- rbind(bcr_par_sum, c1)
-# }
-# bcr_tau <- filter(bcr_par_sum, par=="tau")
-
-
-
-# end analysis
+# end analysis -----------------------------------------------------------------
 
 
