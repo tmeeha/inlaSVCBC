@@ -90,8 +90,7 @@ The final term in the model, $\kappa_{k}$, was a random effect that accounted fo
 \section{Data}
 Data used here to demonstrate the SVC modeling approach was from the American Robin, from Christmas Bird Counts conducted across North America from 1966 through 2017. Before modeling the data, extreme outliers ($>$ 3 SD from the mean, after log transformation) in counts and effort were removed. After filtering, there were 78,140 counts from 3195 count circles for modeling.
 
-Locations of the 3195 count circles (Figure 2A) were mapped using the North American Albers Equal Area Conic projection (EPSG 102008) and assigned to 880 cells on a grid divided along 100 km increments in latitude and longitude (Figure 2A). Grid cells formed a continuous lattice within a non-convex polygon created using circle locations. A continuous lattice was used to improve qualities of the neighborhood structure used in ICAR modeling. The number of count circles per grid cell varied from 0 to 20, but averaged 2.76. The number of neighbors for a given grid cell ranged from 1 to 8 and averaged 7.48.
-
+Locations of the 3195 count circles (Figure 2A) were mapped using the North American Albers Equal Area Conic projection (EPSG 102008) and assigned to 880 cells on a grid divided along 100 km increments in latitude and longitude (Figure 2A). Grid cells formed a continuous lattice within a non-convex polygon created using circle locations. A continuous lattice was used to improve qualities of the neighborhood structure used in ICAR modeling. The number of count circles per grid cell varied from 0 to 20, but averaged 2.76 (Figure 2B). The number of neighbors for a given grid cell ranged from 1 to 8 and averaged 7.48.
 
 
 \section{Analysis}
@@ -99,20 +98,20 @@ Hierarchical Bayesian model analysis was conducted using the R-INLA package for 
 
 \begin{verbatim}
 formula <- count ~
-  # alpha
+  # alpha ~ upsilon_0 + upsilon_i
     1 + f(grid_id1, model="besag", graph=g, scale.model=TRUE, hyper=list(prec=
     list(prior="pc.prec", param=c(1, 0.01)))) +
-  # epsilon
+  # epsilon ~ psi_0 + psi_i
     log_hrs + f(grid_id2, log_hrs, model="besag", graph=g, scale.model=TRUE, 
     hyper=list(prec=list(prior="pc.prec", param=c(1, 0.01)))) +
-  # tau
+  # tau ~ delta_0 + delta_i
     std_yr + f(grid_id3, std_yr, model="besag", graph=g, scale.model=TRUE, hyper=
     list(prec=list(prior="pc.prec", param=c(1, 0.01)))) +
   # kappa
     f(circle, model="iid", hyper=list(prec=list(prior="pc.prec", param=c(1, 0.01))))
 \end{verbatim}
 
-The model was analyzed with a call to the inla() function and a summary of the result was printed with a call to the summary() function.
+The model was analyzed with a call to the inla() function and a summary of the result was printed with a call to the summary() function. Note that parameter names in the summary have been modified to match those in the model description.
 
 \begin{verbatim}
 result <- inla(form1, family="nbinomial", data=modeling_data, control.compute=
@@ -122,31 +121,39 @@ summary(result)
 Time used: 16933.517 sec
 
 Fixed effects:     mean      sd    0.025quant  0.5quant     0.975quant
-(Intercept)       0.479   0.118         0.247     0.479          0.710
-log_hrs           0.798   0.027         0.745     0.798          0.852
-std_yr            0.022   0.002         0.018     0.022          0.026
+upsilon_0         0.479   0.118         0.247     0.479          0.710
+psi_0             0.798   0.027         0.745     0.798          0.852
+delta_0           0.022   0.002         0.018     0.022          0.026
 
-Model hyperparameters:             mean     sd 0.025quant 0.5quant 0.975quant
-(1/overdispersion)                0.514  0.001      0.512    0.514      0.517
-Precision, alpha ICAR             0.378  0.027      0.332    0.376      0.438
-Precision, epsilon ICAR          14.329  2.335     10.242   14.160     19.402
-Precision, grid_tau ICAR        518.794 32.659    464.640  514.958    592.211
-Precision, kappa exchangeable     0.909  0.035      0.849    0.906      0.986
+Model hyperparameters:               mean     sd 0.025quant 0.5quant 0.975quant
+(1/overdispersion)                  0.514  0.001      0.512    0.514      0.517
+Precision, upsilon_i ICAR           0.378  0.027      0.332    0.376      0.438
+Precision, psi_i ICAR              14.329  2.335     10.242   14.160     19.402
+Precision, delta_i ICAR           518.794 32.659    464.640  514.958    592.211
+Precision, kappa_k exchangeable     0.909  0.035      0.849    0.906      0.986
 \end{verbatim}
 
 Model analysis took approximately 5 hours.  The analysis summary lists parameter estimates for global fixed effects as well as estimates for hyperparameters, such as the negative binomial dispersion parameter and the precision estimates associated with the random effects. The following results are noteworthy.
 
-First, we see that the posterior median for the log effort effect was 0.8. This value represents a power law exponent for the relationship between effort and counts.  The value less than 1 indicates that, on average, there was a diminishing return for additional count effort. Second, we se that, on average, American Robins have increased by approximately 2.2\% per year between 1966 and 2017, equating with a 210\% increase over the 52 year period. 
+First, we see that the posterior median for the log-effort effect, $\psi_0$, was 0.798. This value represents a power law exponent for the relationship between effort and counts.  A value less than 1 indicated that, on average, there was a diminishing return for additional count effort. Second, we get an estimate for $\delta_0$ of 0.022, indicating that, on average, American Robins have increased by approximately 2.2\% per year between 1966 and 2017, or 210\% over the 52 year period. 
 
-The overdispersion parameter, 1 / 0.514 = 1.95, was considerably greater than 1, highlighting overdispersion in Robbin counts. Precision estimates for the random effects showed that all were important for explaining variation in the data. The effects ranked (\textit{i}) spatially-structured $\alpha$ component, (\textit{ii}) $\kappa$, (\textit{iii}) spatially-structured $\epsilon$ component, and (\textit{iv}) spatially-structured $\tau$ component, in terms of the amount of variation explained. 
+The overdispersion parameter, 1 / 0.514 = 1.946, was considerably larger than 1, highlighting overdispersion in Robbin counts. Precision estimates for the random effects showed that all were important for explaining variation in the data. The random effects were ranked $\upsilon_i$, $\kappa_k$, $\psi_i$, and $\delta_i$, in terms of the amount of variation explained.
 
-\begin{figure}[t]
+Samples from the posterior distributions of latent effects were acquired using the inla.sample.posterior() function. A posterior distribution for $\alpha_i$ was created by summing samples for $\upsilon_0$ and $\upsilon_i$. A posterior distribution for $\epsilon_i$ was created by summing samples for $\psi_0$ and $\psi_i$. A posterior distribution for $\tau_i$ was created by summing samples for $\delta_0$ and $\delta_i$.
+
+Characteristics of posteriors for $\alpha_i$ and $\tau_i$ are mapped in Figure 3. Figure 3 illustrates that, given a standard count effort of 100 party hours, American Robin counts are expected to vary dramatically across their range, from < 5 to > 2000. The species is most abundant in regions with moderate climate and decreases in relatively warm and cold regions. Regarding trends in relative abundance, American Robins have generally decreased in the warmer parts of their range and increased in the colder parts of their range.  These trends could signal a shift in the species winter range, possibly due to increased bird feeding and gradual increases in climate over the 52 year period. Figure 3B depicts our confidence in trend estimates across the species winter range, where it is higher (narrow credible intervals) in grid cells with a higher density of count circles and lower (wide credible intervals) in places where information is sparse. The credible intervals shown in Figure 3B can be used to determine where trends are significantly (probability > 0.95) greater than or less than 0\% change per year. 
+
+A common practice with the standard approach is to aggregate trends at the stratum level up to larger scales, such as the BCR. We were curious how aggregate trends using the SVC method compared to those from the standard method.  We calculated the median of posterior medians across grid cells within each BCR, to compare aggregate median trends across the two methods. Figure 4 shows the posterior median of posterior medians across cells per BCR (A) along with the posterior median trend for each BCR from the standard analysis.  Side-by-side comparison of these maps shows that aggregate trends are similar, regardless of method. When values from different methods are directly compared to one another, they give a correlation coefficient of 0.88.
+
+We were also interested in learning how the precision of trend estimates compoared across the two approaches. Figure 5 compares the credible interval widths per grid cell (A) with those for aggregate BCR estimates from the standard approach (B). When compared to the standard approach (Figure 5C, Standard), some grid cells within a BCR, ones in information rich regions, have trend estimates with relatively high precision (Figure 5, SVC minimum). Other grid cells, ones in information poor regions, have trend estimates with relatively low precision. On average, however, precisions of estimates are similar, regardless of method. These results indicate that the SVC approach is capable of generating trends at fine spatial scales, while also producing aggregate trends that are similar in magnitude and precision to those generated using the standard method.
+
+\begin{figure}[p]
   \centering
-  \begin{subfigure}[t]{0.99\textwidth}
+  \begin{subfigure}{0.99\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{eps} 
+    \includegraphics[width=\textwidth]{eps_pit} 
   \end{subfigure}
-  \caption{Map of American Robin posterior median trends per BCR, produced using the standard analysis approach (A) and the one demonstrated here (B). (C) Bivariate plot of the trends mapped in (A) and (B), with 1:1 line.}
+  \caption{Supplemental figures showing spatial variation in $\epsilon_i$ values (A) and a histogram of PIT values from the SVC model for American Robin counts (B). The approximately uniform distribution of PIT values suggests that the predictive distribution of the model is consistent with the data.}
 \end{figure}
 
 

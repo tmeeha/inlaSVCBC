@@ -316,7 +316,11 @@ tau <- yrs + g31 + 0; hist(tau)
 # gof
 sum(out1$cpo$failure, na.rm=T)
 sum(log(out1$cpo$cpo), na.rm=T)
-hist(out1$cpo$pit)
+pit <- ggplot(data=data.frame(PIT=out1$cpo$pit), aes(x=PIT)) +
+  geom_histogram(col="white") +
+  xlab("Probability integral transform (PIT)") +
+  ylab("Count")
+
 
 
 
@@ -472,6 +476,10 @@ dev.off()
 
 pdf("eps.pdf", height=3.75, width=10.5)
 multiplot(eps1, eps3, cols=2)
+dev.off()
+
+pdf("eps_pit.pdf", height=3.75, width=10.5)
+multiplot(eps1, pit, cols=2)
 dev.off()
 
 
