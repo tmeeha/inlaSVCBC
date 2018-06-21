@@ -11,9 +11,7 @@ library(sp)
 library(spdep)
 library(sf)
 library(concaveman)
-library(raster)
 library(tidyverse)
-library(scales)
 library(INLA)
 
 # plot theme
@@ -394,7 +392,7 @@ post_sum$country <- grid_key$country
 
 
 # make cell level maps ---------------------------------------------------------
-bcr_map <- readOGR(dsn="../Shapes", layer="simple_bcr")
+bcr_map <- readOGR(dsn=".", layer="simple_bcr")
 bcr_sf <- as(bcr_map, "sf")
 results_cells <- merge(modeling_cells, post_sum)
 res_sf <- as(results_cells, "sf")
@@ -563,7 +561,7 @@ std_prec_map <- ggplot() +
                        low = "green4", mid = "white",
                        high = "purple4", midpoint = 6, space = "Lab",
                        na.value = "grey40", guide = "colourbar",
-                       limits=c(1, 20)) +
+                       limits=c(1, 12)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 
 # new prec grid
@@ -585,4 +583,4 @@ dev.off()
 
 # end analysis -----------------------------------------------------------------
 
-
+write.csv(data.frame(sd2$lon, sd2$lat), "cbclatlon.csv")
