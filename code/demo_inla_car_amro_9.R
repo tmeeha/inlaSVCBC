@@ -12,6 +12,7 @@ library(spdep)
 library(sf)
 library(concaveman)
 library(tidyverse)
+library(scales)
 library(INLA)
 
 # plot theme
@@ -76,8 +77,8 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 }
 
 # directories and options
-wd1 <- "C:\\Users\\tmeehan\\Documents\\AudWork\\localCBCTrend\\spatialCBC\\AMRO"
-wd2 <- "C:\\Users\\tmeehan\\Documents\\AudWork\\localCBCTrend\\spatialCBC"
+wd1 <- "C:\\Users\\tmeehan\\Documents\\Github\\inlaSVCBC\\code"
+wd2 <- "C:\\Users\\tmeehan\\Documents\\Github\\inlaSVCBC\\code"
 options(scipen=9999999)
 options(max.print=99999)
 options(stringsAsFactors=F)
@@ -159,7 +160,7 @@ str(d3)
 
 
 # bring in na grid and match up with cbc circles -------------------------------
-na_grid <- readOGR(dsn="../Shapes", "na_grid_w_centroids"); summary(na_grid)
+na_grid <- readOGR(dsn=".", "na_grid_w_centroids"); summary(na_grid)
 proj4string(na_grid) <- crs102008
 
 # make unique circle shapefile
@@ -314,11 +315,63 @@ tau <- yrs + g31 + 0; hist(tau)
 # gof
 sum(out1$cpo$failure, na.rm=T)
 sum(log(out1$cpo$cpo), na.rm=T)
-pit <- ggplot(data=data.frame(PIT=out1$cpo$pit), aes(x=PIT)) +
+pd1 <- data.frame(PIT=out1$cpo$pit) %>%
+  filter(!out1$cpo$failure==1)
+pit <- ggplot(data=pd1, aes(x=PIT)) +
   geom_histogram(col="white") +
   xlab("Probability integral transform (PIT)") +
-  ylab("Count")
+  ylab("Count"); pit
 
+
+
+# # specify model with year cell effects and prep data ---------------------------
+# head(modeling_data)
+# modeling_data$grid_yr <- paste0(modeling_data$grid_id, "-", modeling_data$year)
+#
+# form2 <- count ~
+#   # grand mean
+#   1 + log_hrs + std_yr +
+#   # cell unstructured and ICAR random effects
+#   f(grid_id1, model="besag", graph=g, scale.model=TRUE,
+#     hyper = list(prec = list(
+#       prior = "pc.prec",
+#       param = c(1, 0.01)))) +
+#   # cell unstructured and ICAR random effort slopes
+#   f(grid_id2, log_hrs, model="besag", graph=g, scale.model=TRUE,
+#     hyper = list(prec = list(
+#       prior = "pc.prec",
+#       param = c(1, 0.01)))) +
+#   # cell unstructured and ICAR random year slopes
+#   f(grid_id3, std_yr, model="besag", graph=g, scale.model=TRUE,
+#     hyper = list(prec = list(
+#       prior = "pc.prec",
+#       param = c(1, 0.01)))) +
+#   # random circle
+#   f(circle, model="iid",
+#     hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01)))) +
+#   # cell-year effect
+#   f(grid_yr, model="iid",
+#     hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01))))
+#
+# # index and sort
+# modeling_data$grid_id2 <- modeling_data$grid_id1 <- modeling_data$grid_id
+# modeling_data$grid_id3 <- modeling_data$grid_id2
+# modeling_data <- arrange(modeling_data, grid_id, std_yr)
+#
+#
+#
+# # run model and check output ---------------------------------------------------
+# out2<- inla(form2, family="nbinomial", data=modeling_data,
+#             # control.predictor=list(compute=T, link=1),
+#             control.compute=list(cpo=T, config=T),
+#             control.inla=list(int.strategy='eb'),
+#             num.threads=3,
+#             verbose=T)
+#
+# # view summaries
+# summary(out2, digits=3)
+# out2$summary.random$grid_yr[grep("600-", out2$summary.random$grid_yr$ID,
+#                                  fixed=T), c(1,5,4,6)]
 
 
 
@@ -429,7 +482,7 @@ tau3 <- ggplot() +
                        high = muted("red4"), midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-#multiplot(tau1, tau3, tau2, cols=2)
+multiplot(tau1, tau3, tau2, cols=2)
 
 # map epsilon
 eps1 <- ggplot() +
@@ -454,7 +507,7 @@ eps3 <- ggplot() +
                        high = muted("green4"), midpoint = 1, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-#multiplot(eps1, eps3, cols=2)
+multiplot(eps1, eps3, cols=2)
 
 # map alpha
 alph1 <- ggplot() +
@@ -465,7 +518,7 @@ alph1 <- ggplot() +
                        na.value = "grey40", guide = "colourbar", trans="log",
                        breaks=c(0.2, 5, 100, 2000)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-#multiplot(alph1, alph1, alph1, cols=2)
+multiplot(alph1, alph1, alph1, cols=2)
 
 # print cell maps
 pdf("tau_alpha.pdf", height=7.5, width=10.5)
@@ -558,18 +611,18 @@ std_prec_map <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
   geom_sf(data=compare_bcr_wide, aes(fill=std_prec), col="gray40", size=0.3) +
   scale_fill_gradient2("Standard\ninterval\nwidth\n(% per year)",
-                       low = "green4", mid = "white",
-                       high = "purple4", midpoint = 6, space = "Lab",
+                       high = "green4", mid = "white",
+                       low = "purple4", midpoint = 6, space = "Lab",
                        na.value = "grey40", guide = "colourbar",
-                       limits=c(1, 12)) +
+                       limits=c(1, 20)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 
 # new prec grid
 new_prec_grid <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
   geom_sf(data=res_sf, aes(fill=prec_tau), col="gray40", size=0.3) +
-  scale_fill_gradient2("SVC\ninterval\nwidth\n(% per year)", low = "green4", mid = "white",
-                       high = "purple4", midpoint = 6, space = "Lab",
+  scale_fill_gradient2("SVC\ninterval\nwidth\n(% per year)", high = "green4", mid = "white",
+                       low = "purple4", midpoint = 6, space = "Lab",
                        na.value = "grey40", guide = "colourbar",
                        limits=c(1, 20)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
