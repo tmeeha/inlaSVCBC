@@ -6,8 +6,8 @@
 
 # set up -----------------------------------------------------------------------
 # install the required packages
-library(tidyverse)
 library(RColorBrewer)
+library(tidyverse)
 library(rgdal)
 library(sp)
 library(spdep)
@@ -163,20 +163,33 @@ out1<- inla(form1, family="nbinomial", data=modeling_data,
 # view summaries
 summary(out1, digits=3)
 bri.hyperpar.summary(out1)
+
+# remove cells with no circles
 cells_with_counts <- unique(modeling_data$grid_id[which(
   !is.na(modeling_data$hours))])
+
+# get alpha summaries
 alph <- exp(out1$summary.random$alpha_i$`0.5quant`[cells_with_counts])
 alph_ll <- exp(out1$summary.random$alpha_i$`0.025quant`[cells_with_counts])
 alph_ul <- exp(out1$summary.random$alpha_i$`0.975quant`[cells_with_counts])
 alph_iw <- alph_ul - alph_ll
 hist(alph); summary(alph)
+hist(alph_ll); summary(alph_ll)
+hist(alph_ul); summary(alph_ul)
+
+# get epsilon summaries
 eps <- out1$summary.random$eps_i$`0.5quant`[cells_with_counts]
 eps_ll <- out1$summary.random$eps_i$`0.025quant`[cells_with_counts]
 eps_ul <- out1$summary.random$eps_i$`0.975quant`[cells_with_counts]
 eps_iw <- eps_ul - eps_ll
-hist(eps); summary(eps)
+hist(eps); summary(eps); round(sum(eps<1)/length(eps), 2)
 hist(eps_ll); summary(eps_ll)
 hist(eps_ul); summary(eps_ul)
+round(sum(eps_ll<=1 & eps_ul>=1)/length(eps_ll), 2)
+round(sum(eps_ll<=0 & eps_ul>=0)/length(eps_ll), 2)
+cor.test(eps, alph, method="spearman")
+
+# get tau summaries
 tau <- (exp(out1$summary.random$tau_i$`0.5quant`[cells_with_counts])
         - 1) * 100
 tau_ll <- (exp(out1$summary.random$tau_i$`0.025quant`[cells_with_counts])
@@ -184,10 +197,14 @@ tau_ll <- (exp(out1$summary.random$tau_i$`0.025quant`[cells_with_counts])
 tau_ul <- (exp(out1$summary.random$tau_i$`0.975quant`[cells_with_counts])
            - 1) * 100
 tau_iw <- tau_ul - tau_ll
-hist(tau); summary(tau)
+hist(tau); summary(tau); round(sum(tau>=0)/length(tau), 2)
 hist(tau_ll); summary(tau_ll)
 hist(tau_ul); summary(tau_ul)
 hist(tau_iw); summary(tau_iw)
+round(sum(tau_ll<=0 & tau_ul<=0)/length(tau_ll), 2)
+round(sum(tau_ll>=0 & tau_ul>=0)/length(tau_ll), 2)
+cor(cbind(alph, tau), method="spearman")
+ppcor::pcor(cbind(eps, alph, tau), method="spearman")
 
 # gof
 sum(out1$cpo$failure, na.rm=T)
@@ -218,7 +235,7 @@ pit2 <- ggplot(data=pit1, aes(x=PIT)) +
 #     hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01)))) +
 #   # random circle intercepts
 #   f(kappa_k, model="iid", constr=TRUE,
-#     hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01))))
+#     hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01)))) +
 #   # cell-year effect
 #   f(gamma_ij, model="iid", constr=TRUE,
 #     hyper = list(prec = list(prior = "pc.prec", param = c(1, 0.01))))
@@ -232,8 +249,82 @@ pit2 <- ggplot(data=pit1, aes(x=PIT)) +
 #
 # # view summaries
 # summary(out2, digits=3)
-# out2$summary.random$grid_yr[grep("600-", out2$summary.random$grid_yr$ID,
-#                                  fixed=T), c(1,5,4,6)]
+# bri.hyperpar.summary(out2)
+# sum(out1$cpo$failure, na.rm=T)
+# sum(out2$cpo$failure, na.rm=T)
+# -2 * mean(log(out1$cpo$cpo[out1$cpo$failure==0]), na.rm=T)
+# -2 * mean(log(out2$cpo$cpo[out2$cpo$failure==0]), na.rm=T)
+# pit1 <- data.frame(PIT=out2$cpo$pit) %>%
+#   filter(out2$cpo$pit<0.99 & out2$cpo$failure!=1 & out2$cpo$pit>0.01)
+# pit2 <- ggplot(data=pit1, aes(x=PIT)) +
+#   geom_histogram(col="white") +
+#   xlab("Probability integral transform (PIT)") +
+#   ylab("Count"); pit2; summary(pit1$PIT)
+#
+# # time series plots per cell
+# cell_ts <- function(cell1=801){
+#   d0 <- out2$summary.random$alpha_i$`0.5quant`[cell1]
+#   d1 <- out2$summary.random$tau_i$`0.5quant`[cell1]
+#   d2 <- data.frame(
+#   year=as.numeric(gsub(paste0(cell1,"-"), "",
+#                        grep(paste0("\\b",cell1,"-"),
+#                             out2$summary.random$gamma_ij$ID,
+#                                  value=T)))-117,
+#   gamma_ij=
+#     out2$summary.random$gamma_ij$`0.5quant`[grep(
+#       paste0("\\b",cell1,"-"), out2$summary.random$gamma_ij$ID)]) %>%
+#     arrange(year)
+#   d2$x0 <- d0
+#   d2$x1 <- d2$year*d1
+#   d2$abund <- exp(d2$x0 + d2$x1 + d2$gamma_ij)
+#   d2$trend <- exp(d2$x0 + d2$x1)
+#   ggplot(d2, aes(x=year+117+ 1900)) + geom_line(aes(y=trend)) +
+#   geom_point(aes(y=abund)) + annotate("text", x=1975, y=14,
+#                                       label=paste0("Grid cell number ", cell1))
+# }
+# cell2 <- c(798, 799, 800, 801)
+# for(i in cell2){
+#   print(cell_ts(i))
+# }
+#
+#
+# # ----------------------------------------------------------------------------
+
+
+
+# play with samples ------------------------------------------------------------
+posterior_ss <- 10
+samp1 <- inla.posterior.sample(posterior_ss, out1, num.threads=3)
+par_names <- as.character(attr(samp1[[1]]$latent, "dimnames")[[1]])
+post1 <- as.data.frame(sapply(samp1, function(x) x$latent))
+post1$par_names <- par_names
+
+# tau samples
+tau_samps1 <- post1[grep("tau_i", post1$par_names), ]
+row.names(tau_samps1) <- NULL
+tau_samps1 <- tau_samps1[cells_with_counts, 1:posterior_ss]
+tau_samps1 <- (exp(tau_samps1) - 1) * 100
+tau_samps2 <- cbind(grid_key[cells_with_counts,], tau_samps1)
+row.names(tau_samps2) <- NULL
+val_names <- grep("V", names(tau_samps2))
+
+# tau_bcr
+tau_bcr <- tau_samps2 %>%
+  dplyr::select(bcr, val_names) %>%
+  mutate(bcr=factor(bcr)) %>%
+  gather(key=key, val=val, -bcr) %>%
+  dplyr::select(-key) %>%
+  group_by(bcr) %>%
+  summarise(med_tau=median(val), lcl_tau=quantile(val, probs=0.025),
+            ucl_tau=quantile(val, probs=0.975), iw_tau=ucl_tau-lcl_tau,
+            n=n()/posterior_ss); View(tau_bcr)
+
+# tau_total
+tau_tot <- tau_samps2 %>%
+  dplyr::select(val_names) %>%
+  as.matrix() %>%
+  as.numeric() %>%
+  quantile(probs=c(0.5, 0.025, 0.975)); tau_tot
 # ------------------------------------------------------------------------------
 
 
@@ -259,17 +350,12 @@ summary(post_sum)
 # make cell level maps ---------------------------------------------------------
 bcr_map <- readOGR(dsn=".", layer="simple_bcr")
 bcr_sf <- as(bcr_map, "sf")
-results_cells <- merge(cbc_amro_grid, post_sum)
+results_cells <- merge(cbc_amro_grid, post_sum, by="grid_id", all=F)
 res_sf <- as(results_cells, "sf")
-
-# filter out empty cells
-cells_with_counts
-#hits1 <- which(!is.na(over(cbc_amro_grid, sd2)["grid_id"])==T)
+plot(res_sf["tau"])
 cbc_amro_grid <- cbc_amro_grid[cells_with_counts, ]
 plot(cbc_amro_grid)
 plot(cbc_amro_circles, add=T, pch=16, cex=0.5)
-res_sf <- res_sf[cells_with_counts, ]
-summary(post_sum)
 
 # map tau
 tau_p1 <- ggplot() +
@@ -367,6 +453,8 @@ compare_bcr_wide <- merge(bcr_sf, new_bcr, by.y="bcr", by.x="BCRNumber",
 compare_bcr_wide <- merge(compare_bcr_wide, std_bcr,
                           by.y="bcr", by.x="BCRNumber", all=F)
 summary(compare_bcr_wide)
+sd(compare_bcr_wide$new_med_prec)
+sd(compare_bcr_wide$std_prec)
 
 # map side by side
 names(compare_bcr_wide)
@@ -412,7 +500,7 @@ cor.test(x=compare_bcr_wide$new_med_tau, compare_bcr_wide$std_med,
 
 # aggregate precision
 compare_bcr_long <- as.data.frame(compare_bcr_wide) %>%
-  select(1,5,6,7,11) %>%
+  dplyr::select(1,5,6,7,11) %>%
   gather(key=Category, value=Precision, -BCRNumber)
 compare_bcr_long$Category <- factor(compare_bcr_long$Category)
 compare_bcr_long$Category <- factor(compare_bcr_long$Category,
