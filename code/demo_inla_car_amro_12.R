@@ -78,6 +78,7 @@ cbc_na_grid <- readOGR(dsn=".", layer="cbc_na_grid")
 cbc_na_grid$na_id <- cbc_na_grid$id; head(cbc_na_grid@data)
 plot(cbc_na_grid)
 plot(cbc_amro_grid, col="red", add=T)
+grid1 <- as(cbc_amro_grid, "sf")
 plot(cbc_amro_circles, col="blue", add=T)
 grid_key <- unique(modeling_data[, c("grid_id", "bcr", "bcr_name", "state",
                                      "country")])
@@ -356,11 +357,25 @@ cbc_amro_grid <- cbc_amro_grid[cells_with_counts, ]
 plot(cbc_amro_grid)
 plot(cbc_amro_circles, add=T, pch=16, cex=0.5)
 
+# grid
+circles1 <- as(cbc_amro_circles, "sf")
+grid1 <- merge(grid1, circles_per_cell, all=T)
+grid1$number_circles[is.na(grid1$number_circles)] <- 0
+grid_p1 <- ggplot() +
+  geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
+  geom_sf(data=grid1, aes(fill=number_circles), col="gray40", size=0.3) +
+  scale_fill_gradient("A. Circles\nper cell", low = ("white"),
+                       high = ("red4"), space = "Lab", trans="log1p",
+                       na.value = "grey40", guide = "colourbar",
+                      breaks=c(0,2,7,20)) +
+  theme_map() +
+  theme(panel.grid.major=element_line(colour="transparent"))
+
 # map tau
 tau_p1 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
   geom_sf(data=res_sf, aes(fill=tau), col="gray40", size=0.3) +
-  scale_fill_gradient2("Tau\n(% per year)", low = ("royalblue4"),
+  scale_fill_gradient2("D. Tau\n(% per year)", low = ("royalblue4"),
                        mid = "white",
                        high = ("red4"), midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
@@ -368,27 +383,28 @@ tau_p1 <- ggplot() +
 tau_p2 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
   geom_sf(data=res_sf, aes(fill=tau_iw), col="gray40", size=0.3) +
-  scale_fill_gradient2("Tau\ncredible\ninterval\nwidth\n(% per year)",
+  scale_fill_gradient2("F. Tau\ncredible\ninterval\nwidth\n(% per year)",
                        low = ("purple4"), mid = "white",
                        high = ("green4"), midpoint = 6, space = "Lab",
-                       na.value = "grey40", guide = "colourbar") +
+                       na.value = "grey40", guide = "colourbar",
+                       breaks=c(3,6,9,12)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
 tau_p3 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
   geom_sf(data=res_sf, aes(fill=tau_sig), col="gray40", size=0.3) +
-  scale_fill_gradient2("Significant tau\n(% per year)",
+  scale_fill_gradient2("E. Significant\ntau (% per year)",
                        low = muted("royalblue4"), mid = "gray95",
                        high = muted("red4"), midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-multiplot(tau_p1)
+#multiplot(tau_p1)
 # multiplot(tau_p1, tau_p3, tau_p2, cols=2)
 
 # map epsilon
 eps_p1 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
   geom_sf(data=res_sf, aes(fill=eps), col="gray40", size=0.3) +
-  scale_fill_gradient2("Epsilon", low = muted("purple4"), mid = "white",
+  scale_fill_gradient2("C. Epsilon", low = muted("purple4"), mid = "white",
                        high = muted("green4"), midpoint = 1, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
@@ -409,23 +425,23 @@ eps_p3 <- ggplot() +
                        high = muted("green4"), midpoint = 1, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-multiplot(eps_p1)
+#multiplot(eps_p1)
 # multiplot(eps_p1, eps_p3, eps_p2, cols=2)
 
 # map alpha
 alph_p1 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
   geom_sf(data=res_sf, aes(fill=alph), col="gray40", size=0.3) +
-  scale_fill_gradient2("Alpha", low = "tan4", mid = "white",
+  scale_fill_gradient2("B. Alpha", low = "tan4", mid = "white",
                        high = "green4", midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar", trans="log",
                        breaks=c(0.01, 0.1, 1, 10)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-multiplot(alph_p1)
+#multiplot(alph_p1)
 
 # print cell maps
-pdf("tau_alpha.pdf", height=7.5, width=10.5)
-multiplot(tau_p1, tau_p3, tau_p2, alph_p1, cols=2)
+pdf("tau_alpha.pdf", height=11.25, width=10.5)
+multiplot(grid_p1, eps_p1, tau_p3, alph_p1, tau_p1, tau_p2,cols=2)
 dev.off()
 
 pdf("eps.pdf", height=3.75, width=10.5)
@@ -550,162 +566,50 @@ dev.off()
 
 
 # import trend covariates ------------------------------------------------------
-dir()
 trend_covs <- readOGR("cbc_amro_grid_covs.shp")
 names(trend_covs)
-trend_covs <- trend_covs[,9:12]
-results1 <- merge(res_sf, trend_covs@data, by.x="grid_id", by.y="amro_id")
-results1[878, 27:29] <- results1[879, 27:29]
-plot(results1["minTemp"])
+trend_covs <- spTransform(trend_covs, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+trend_covs$lon <- coordinates(trend_covs)[,1]
+trend_covs$lat <- coordinates(trend_covs)[,2]
+trend_covs <- spTransform(trend_covs, CRS("+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"))
+trend_covs <- trend_covs[,9:16]
+results1 <- merge(res_sf, trend_covs@data, by.x="grid_id", by.y="amro_id", all=T)
+results1[1310, 27:29] <- results1[1311, 27:29]
+plot(results1["tempMean"])
+names(results1)
+cov_dat1 <- dplyr::select(results1, grid_id, na_id, x=centroid_x, y=centroid_y,
+                   lon, lat, bcr_num=bcr, bcr_name, state,
+                   country=country.x, alph, alph_ll, alph_ul, alph_iw,
+                   eps, eps_ll, eps_ul, eps_iw, eps_sig, tau, tau_ll,
+                   tau_ul, tau_iw, tau_sig, tempMean, popMean, geometry) %>%
+  mutate(nLat=lat,
+         tempMeanC=tempMean,
+         popMeanP25=((popMean+1)/1000)^0.25,
+         nLat_s=as.numeric(scale(lat)),
+         tempMeanC_s=as.numeric(scale(tempMeanC)),
+         popMeanP25_s=as.numeric(scale(popMeanP25)),
+         car_int=grid_id) %>% arrange(grid_id)
 # ------------------------------------------------------------------------------
 
 
 
 # explore trend relationships --------------------------------------------------
-dir()
-amro_grid <- readOGR(dsn=".", layer="cbc_amro_grid_covs")
-names(amro_grid)[9] <- "grid_id"; head(amro_grid@data)
-cov_dat1 <- merge(results1, amro_grid, by="grid_id", all.x=T, all.y=T, sort=F) %>%
-  mutate(sTempMean=as.numeric(scale(tempMean)),
-         sTempDif=as.numeric(scale(tempDif)),
-         slPopMean=as.numeric(scale(log(popMean+1))),
-         slPopDif=as.numeric(scale(log(popDiff+100)))) %>%
-  arrange(grid_id)
-summary(cov_dat1)
-s1 <- mgcv::gam(tau ~ s(tempMean) + s(popMean) +
-                  te(centroid_x.y, centroid_y.y),
-                data=subset(cov_dat1, bcr>0))
-summary(s1); plot(s1, pages=1)
-
-# model
-cov_dat1$iid_int <- cov_dat1$grid_id
-cov_dat1$car_int <- cov_dat1$grid_id
-cov_dat1$car_tmp <- cov_dat1$grid_id
-cov_dat1$car_tdif <- cov_dat1$grid_id
-cov_dat1$car_pop <- cov_dat1$grid_id
-cov_dat1$car_pdif <- cov_dat1$grid_id
-str(cov_dat1)
-
-# formula 2
-form2 <- tau ~ -1 +
-  f(iid_int, model="iid", constr=F,
-    hyper = list(prec = list(prior = "pc.prec", param = c(0.10, 0.05)))) +
-  f(car_int, model="besag", graph=g1, scale.model=T, constr=F,
-    hyper = list(prec = list(prior = "pc.prec", param = c(0.10, 0.05)))) +
-  f(car_tmp, sTempMean, model="besag", graph=g1, scale.model=T, constr=F,
-    hyper = list(prec = list(prior = "pc.prec", param = c(0.30, 0.10)))) +
-  f(car_tdif, sTempDif, model="besag", graph=g1, scale.model=T, constr=F,
-    hyper = list(prec = list(prior = "pc.prec", param = c(0.30, 0.10)))) +
-  f(car_pop, slPopMean, model="besag", graph=g1, scale.model=T, constr=F,
-    hyper = list(prec = list(prior = "pc.prec", param = c(0.30, 0.10)))) +
-  f(car_pdif, slPopDif, model="besag", graph=g1, scale.model=T, constr=F,
-    hyper = list(prec = list(prior = "pc.prec", param = c(0.30, 0.10))))
-
-# get results 2
-out2<- inla(form2, family="gaussian", data=cov_dat1,
-            control.compute=list(cpo=T, waic=T, config=T),
-            control.inla=list(strategy="adaptive",
-                              int.strategy="auto"),
-            num.threads=3,
-            verbose=F)
-summary(out2)
-out2$waic$waic
--2*sum(out2$cpo$cpo, na.rm=T)
-bri.hyperpar.summary(out2)
-plot(out2)
-hist(out2$cpo$pit)
-cov_dat1$car_tmps <- (out2$summary.random$car_tmp$mean[1:n_cells])
-cov_dat1$car_tdifs <- (out2$summary.random$car_tdif$mean[1:n_cells])
-cov_dat1$car_pops <- (out2$summary.random$car_pop$mean[1:n_cells])
-cov_dat1$car_pdifs <- (out2$summary.random$car_pdif$mean[1:n_cells])
-cov_dat1$iid_ints <- (out2$summary.random$iid_int$mean[1:n_cells])
-cov_dat1$car_ints <- (out2$summary.random$car_int$mean[1:n_cells])
-cov_dat1$fit <- out2$summary.fitted.values$mean
-cov_dat1$resid <- out2$summary.fitted.values$mean - cov_dat1$tau
-plot(cov_dat1["car_tmps"])
-plot(cov_dat1["car_tdifs"])
-plot(cov_dat1["car_pops"])
-plot(cov_dat1["car_pdifs"])
-plot(cov_dat1["fit"])
-plot(cov_dat1["resid"])
-plot(cov_dat1["iid_ints"])
-plot(cov_dat1["car_ints"])
-
-# model fit
-cov_dat1$fix_fit <- cov_dat1$iid_ints +
-  cov_dat1$sTempMean*cov_dat1$car_tmps +
-  cov_dat1$sTempDif*cov_dat1$car_tdifs +
-  cov_dat1$slPopMean*cov_dat1$car_pops +
-  cov_dat1$slPopDif*cov_dat1$car_pdifs
-cor(cov_dat1$tau, cov_dat1$fit, method="spearman", use="pairwise.complete.obs")
-cor(cov_dat1$tau, cov_dat1$fix_fit, method="spearman", use="pairwise.complete.obs")
-
-# mean vars
-summary(cov_dat1)
-summary(out2$summary.random$car_tmp$mean)
-summary(out2$summary.random$car_tmp$`0.025quant`)
-summary(out2$summary.random$car_tmp$`0.975quant`)
-summary(out2$summary.random$car_tdif$mean)
-summary(out2$summary.random$car_tdif$`0.025quant`)
-summary(out2$summary.random$car_tdif$`0.975quant`)
-
-# map vars
-summary(cov_dat1)
-temp_p1 <- ggplot() +
-  geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=cov_dat1, aes(fill=car_tmps), col="gray40", size=0.3) +
-  scale_fill_distiller("Minimum\ntemperature\neffect", palette="YlOrRd") +
-  theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-tdif_p1 <- ggplot() +
-  geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=cov_dat1, aes(fill=car_tdifs), col="gray40", size=0.3) +
-  scale_fill_distiller("Temperature\nchange\neffect", palette="YlOrRd",
-                       direction=-1) +
-  theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-pop_p1 <- ggplot() +
-  geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=cov_dat1, aes(fill=car_pops), col="gray40", size=0.3) +
-  scale_fill_distiller("Population\neffect", palette="YlGnBu", direction=1) +
-  theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-pdif_p1 <- ggplot() +
-  geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
-  geom_sf(data=cov_dat1, aes(fill=car_pdifs), col="gray40", size=0.3) +
-  scale_fill_distiller("Population\nchange\neffect", palette="YlGnBu") +
-  theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-
-# print cell maps
-pdf("effs_map.pdf", height=7.5, width=10.5)
-multiplot(temp_p1, tdif_p1, pop_p1, pdif_p1, cols=2)
-dev.off()
-
-
-
-# vars 3
-names(cov_dat1)
-summary(cov_dat1)
-cov_dat1$north100km <- as.numeric(scale(cov_dat1$centroid_y.x/100000), scale=F)
-cov_dat1$tempMeanC <- as.numeric(scale(cov_dat1$tempMean), scale=F)
-cov_dat1$popMeanP25 <- as.numeric(scale(((cov_dat1$popMean+1)/1000)^0.25), scale=F)
-cov_dat1$north100km_s <- as.numeric(scale(cov_dat1$north100km))
-cov_dat1$tempMeanC_s <- as.numeric(scale(cov_dat1$tempMeanC))
-cov_dat1$popMeanP25_s <- as.numeric(cov_dat1$popMeanP25)
-
-# form 3
-form3 <- tau ~ 1 + north100km_s + tempMeanC_s + popMeanP25_s +
+# form 2
+form2 <- tau ~ 1 + nLat_s + tempMeanC_s + popMeanP25_s +
   f(car_int, model="besag", graph=g1, scale.model=T, constr=T,
     hyper = list(prec = list(prior = "pc.prec", param = c(0.1, 0.01))))
 
-# get results 3
-out3<- inla(form3, family="gaussian", data=cov_dat1,
+# get results 2
+out2<- inla(form2, family="gaussian", data=cov_dat1,
             control.compute=list(waic=T, config=T, cpo=T),
             control.inla=list(strategy="adaptive",
                               int.strategy="auto"),
             num.threads=3,
             verbose=F)
-summary(out3)
+summary(out2)
 
 # form 3
-form3 <- tau ~ 1 + north100km + tempMeanC + popMeanP25 +
+form3 <- tau ~ 1 + nLat + tempMeanC + popMeanP25 +
   f(car_int, model="besag", graph=g1, scale.model=T, constr=T,
     hyper = list(prec = list(prior = "pc.prec", param = c(0.1, 0.01))))
 
@@ -735,7 +639,7 @@ plot(cov_dat1$fit, cov_dat1$tau)
 
 # model fit
 cov_dat1$fix_fit <- out3$summary.fixed$mean[1] +
-  cov_dat1$north100km*out3$summary.fixed$mean[2] +
+  cov_dat1$nLat*out3$summary.fixed$mean[2] +
   cov_dat1$tempMeanC*out3$summary.fixed$mean[3] +
   cov_dat1$popMeanP25*out3$summary.fixed$mean[4]
 
@@ -780,57 +684,52 @@ fixed.posterior.sample <- function(result=out,
 }
 
 # get fixed posteriors
-posterior_ss <- 200
+posterior_ss <- 500
 fixed_samp <- fixed.posterior.sample(result=out3,
                                      full.ss=posterior_ss,
                                      part.ss=100)
 # get summaries of samples
 apply(fixed_samp, 2, quantile, prob=c(0.025, 0.5, 0.975))
 
-
-# make mean temp effects
-summary(cov_dat1)
+# make lat effects
 fixed_samp <- as.matrix(fixed_samp)
-newdat <- expand.grid(north100km=seq(min(cov_dat1$north100km, na.rm=T),
-                                   max(cov_dat1$north100km, na.rm=T), length=50),
-                      tempMeanC=0,
-                      popMeanP25=0)
-xmat <- model.matrix(~ north100km + tempMeanC + popMeanP25, data=newdat)
+newdat <- expand.grid(nLat=seq(min(cov_dat1$nLat, na.rm=T),
+                                   max(cov_dat1$nLat, na.rm=T), length=50),
+                      tempMeanC=mean(cov_dat1$tempMeanC, na.rm=T),
+                      popMeanP25=mean(cov_dat1$popMeanP25, na.rm=T))
+xmat <- model.matrix(~ nLat + tempMeanC + popMeanP25, data=newdat)
 fitmat <- matrix(ncol=posterior_ss, nrow=nrow(newdat))
 for(i in 1:posterior_ss) fitmat[,i] <- xmat %*% fixed_samp[i,]
 newdat$med <- apply(fitmat, 1, quantile, prob=0.5)
 newdat$lcl <- apply(fitmat, 1, quantile, prob=0.025)
 newdat$ucl <- apply(fitmat, 1, quantile, prob=0.975)
-p_north <- ggplot(data=newdat, aes(x=north100km*1000, y=med, ymin=lcl, ymax=ucl)) +
+p_lat <- ggplot(data=newdat, aes(x=nLat, y=med, ymin=lcl, ymax=ucl)) +
   geom_ribbon(fill="gray70") + geom_line()+
-  xlab("Distance from center of range (km)") + ylab("Tau") +
-  scale_y_continuous(limits=c(-6, 14))
-
+  xlab("Latititude (degrees north)") + ylab("Tau") +
+  scale_y_continuous(limits=c(-7, 15)); p_lat
 
 # make mean temp effects
-summary(cov_dat1)
-newdat <- expand.grid(north100km=0,
+newdat <- expand.grid(nLat=mean(cov_dat1$nLat, na.rm=T),
                       tempMeanC=seq(min(cov_dat1$tempMeanC, na.rm=T),
                                     max(cov_dat1$tempMeanC, na.rm=T), length=50),
-                      popMeanP25=0)
-xmat <- model.matrix(~ north100km + tempMeanC + popMeanP25, data=newdat)
+                      popMeanP25=mean(cov_dat1$popMeanP25, na.rm=T))
+xmat <- model.matrix(~ nLat + tempMeanC + popMeanP25, data=newdat)
 fitmat <- matrix(ncol=posterior_ss, nrow=nrow(newdat))
 for(i in 1:posterior_ss) fitmat[,i] <- xmat %*% fixed_samp[i,]
 newdat$med <- apply(fitmat, 1, quantile, prob=0.5)
 newdat$lcl <- apply(fitmat, 1, quantile, prob=0.025)
 newdat$ucl <- apply(fitmat, 1, quantile, prob=0.975)
-p_temp <- ggplot(data=newdat, aes(x=tempMeanC*10, y=med, ymin=lcl, ymax=ucl)) +
+p_temp <- ggplot(data=newdat, aes(x=tempMeanC, y=med, ymin=lcl, ymax=ucl)) +
   geom_ribbon(fill="gray70") + geom_line()+
   xlab("Mean minimum winter temperature (C)") + ylab("Tau") +
-  scale_y_continuous(limits=c(-6, 14))
+  scale_y_continuous(limits=c(-7, 15)); p_temp
 
 # make mean pop effects
-summary(cov_dat1)
-newdat <- expand.grid(north100km=0,
-                      tempMeanC=0,
+newdat <- expand.grid(nLat=mean(cov_dat1$nLat, na.rm=T),
+                      tempMeanC=mean(cov_dat1$tempMeanC, na.rm=T),
                       popMeanP25=seq(min(cov_dat1$popMeanP25, na.rm=T),
                                      max(cov_dat1$popMeanP25, na.rm=T), length=50))
-xmat <- model.matrix(~ north100km + tempMeanC + popMeanP25, data=newdat)
+xmat <- model.matrix(~ nLat + tempMeanC + popMeanP25, data=newdat)
 fitmat <- matrix(ncol=posterior_ss, nrow=nrow(newdat))
 for(i in 1:posterior_ss) fitmat[,i] <- xmat %*% fixed_samp[i,]
 newdat$med <- apply(fitmat, 1, quantile, prob=0.5)
@@ -839,11 +738,13 @@ newdat$ucl <- apply(fitmat, 1, quantile, prob=0.975)
 p_pop <- ggplot(data=newdat, aes(x=popMeanP25, y=med, ymin=lcl, ymax=ucl)) +
   geom_ribbon(fill="gray70") + geom_line()+
   xlab("Mean population size (power 0.025)") + ylab("Tau") +
-  scale_y_continuous(limits=c(-6, 14))
-
+  scale_y_continuous(limits=c(-7, 15)); p_pop
 
 # plot model effects
-multiplot(p_north, p_temp, p_pop, cols=2)
+multiplot(p_lat, p_temp, p_pop, cols=3)
+pdf("trend_correlates.pdf", height=3.25, width=10.5)
+multiplot(p_lat, p_temp, p_pop, cols=3)
+dev.off()
 # ------------------------------------------------------------------------------
 
 
