@@ -347,6 +347,7 @@ summary(post_sum)
 # ------------------------------------------------------------------------------
 
 
+
 # make cell level maps ---------------------------------------------------------
 bcr_map <- readOGR(dsn=".", layer="simple_bcr")
 bcr_sf <- as(bcr_map, "sf")
@@ -397,7 +398,7 @@ tau_p3 <- ggplot() +
                        high = muted("red4"), midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-#multiplot(tau_p1)
+# multiplot(tau_p1)
 # multiplot(tau_p1, tau_p3, tau_p2, cols=2)
 
 # map epsilon
@@ -425,7 +426,7 @@ eps_p3 <- ggplot() +
                        high = muted("green4"), midpoint = 1, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-#multiplot(eps_p1)
+# multiplot(eps_p1)
 # multiplot(eps_p1, eps_p3, eps_p2, cols=2)
 
 # map alpha
@@ -437,7 +438,7 @@ alph_p1 <- ggplot() +
                        na.value = "grey40", guide = "colourbar", trans="log",
                        breaks=c(0.01, 0.1, 1, 10)) +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-#multiplot(alph_p1)
+# multiplot(alph_p1)
 
 # print cell maps
 pdf("tau_alpha.pdf", height=11.25, width=10.5)
