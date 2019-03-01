@@ -648,6 +648,7 @@ ggplot(data=cov_dat1, aes(x=fit, y=tau)) +
   geom_point() + geom_abline(slope=1, intercept=0)
 ggplot(data=cov_dat1, aes(x=fix_fit, y=tau)) +
   geom_point() + geom_abline(slope=1, intercept=0)
+cor(cov_dat1$fix_fit, cov_dat1$tau, use="complete.obs", method="spearman")
 
 # r-squareds
 cor(cov_dat1$tau, cov_dat1$fit, method="spearman", use="pairwise.complete.obs")
