@@ -70,7 +70,7 @@ options(stringsAsFactors=F)
 # get count data and grids -----------------------------------------------------
 setwd(wd1)
 modeling_data <- read.csv("modeling_data.csv"); head(modeling_data)
-cbc_amro_circles <- readOGR(dsn=".", layer="cbc_amro_circles")
+cbc_amro_circles <- readOGR(dsn=".", layer="cbc_amro_circles") # epsg 102005
 head(cbc_amro_circles@data)
 cbc_amro_grid <- readOGR(dsn=".", layer="cbc_amro_grid")
 names(cbc_amro_grid)[9] <- "grid_id"; head(cbc_amro_grid@data)
@@ -203,8 +203,7 @@ hist(tau_ul); summary(tau_ul)
 hist(tau_iw); summary(tau_iw)
 round(sum(tau_ll<=0 & tau_ul<=0)/length(tau_ll), 2)
 round(sum(tau_ll>=0 & tau_ul>=0)/length(tau_ll), 2)
-cor(cbind(alph, tau), method="spearman")
-ppcor::pcor(cbind(eps, alph, tau), method="spearman")
+cor.test(alph, tau, method="spearman")
 
 # gof
 sum(out1$cpo$failure, na.rm=T)
@@ -292,8 +291,8 @@ pit2 <- ggplot(data=pit1, aes(x=PIT)) +
 
 
 
-# play with samples ------------------------------------------------------------
-posterior_ss <- 10
+# explore samples --------------------------------------------------------------
+posterior_ss <- 10 # change as appropriate
 samp1 <- inla.posterior.sample(posterior_ss, out1, num.threads=3)
 par_names <- as.character(attr(samp1[[1]]$latent, "dimnames")[[1]])
 post1 <- as.data.frame(sapply(samp1, function(x) x$latent))
@@ -317,7 +316,7 @@ tau_bcr <- tau_samps2 %>%
   group_by(bcr) %>%
   summarise(med_tau=median(val), lcl_tau=quantile(val, probs=0.025),
             ucl_tau=quantile(val, probs=0.975), iw_tau=ucl_tau-lcl_tau,
-            n=n()/posterior_ss); View(tau_bcr)
+            n=n()/posterior_ss); head(tau_bcr)
 
 # tau_total
 tau_tot <- tau_samps2 %>%
@@ -398,7 +397,6 @@ tau_p3 <- ggplot() +
                        high = muted("red4"), midpoint = 0, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-# multiplot(tau_p1)
 # multiplot(tau_p1, tau_p3, tau_p2, cols=2)
 
 # map epsilon
@@ -426,7 +424,6 @@ eps_p3 <- ggplot() +
                        high = muted("green4"), midpoint = 1, space = "Lab",
                        na.value = "grey40", guide = "colourbar") +
   theme_map() + theme(panel.grid.major=element_line(colour="transparent"))
-# multiplot(eps_p1)
 # multiplot(eps_p1, eps_p3, eps_p2, cols=2)
 
 # map alpha
@@ -523,9 +520,6 @@ compare_bcr_long$Category <- factor(compare_bcr_long$Category,
                                     levels(compare_bcr_long$Category)
                                     [c(4,3,2,1)])
 compare_bcr_long %>% group_by(Category) %>% summarise(mean(Precision))
-coin::independence_test(Precision~Category,
-             data=subset(compare_bcr_long,
-                         Category!="new_min_prec" & Category!="new_max_prec"))
 
 # histogram
 svc_prec <- ggplot(data=compare_bcr_long) +
@@ -645,14 +639,10 @@ cov_dat1$fix_fit <- out3$summary.fixed$mean[1] +
   cov_dat1$popMeanP25*out3$summary.fixed$mean[4]
 
 ggplot(data=cov_dat1, aes(x=fit, y=tau)) +
-  geom_point() + geom_abline(slope=1, intercept=0)
+  geom_point() + geom_abline(slope=1, intercept=0) # with car component
 ggplot(data=cov_dat1, aes(x=fix_fit, y=tau)) +
-  geom_point() + geom_abline(slope=1, intercept=0)
+  geom_point() + geom_abline(slope=1, intercept=0) # just fixed effects
 cor(cov_dat1$fix_fit, cov_dat1$tau, use="complete.obs", method="spearman")
-
-# r-squareds
-cor(cov_dat1$tau, cov_dat1$fit, method="spearman", use="pairwise.complete.obs")
-cor(cov_dat1$tau, cov_dat1$fix_fit, method="spearman", use="pairwise.complete.obs")
 
 # posterior sampling function
 fixed.posterior.sample <- function(result=out,
