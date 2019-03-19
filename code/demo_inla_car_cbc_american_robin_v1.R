@@ -1,6 +1,13 @@
 # cbc with car model -----------------------------------------------------------
-# this is code for running an ICAR SVC model on CBC data.
-# data to run the code can be found at https://github.com/tmeeha/inlaSVCBC
+# authors: Tim Meehan, Nicole Michel, Haavard Rue
+# date: 19 March 2019
+# code version: version 1.0
+# description: This is code for running an ICAR SVC model using CBC data.
+# Data to run the code can be found at https://github.com/tmeeha/inlaSVCBC.
+# This code runs on R version 3.3.1 (2016-06-21), platform
+# x86_64-w64-mingw32/x64 (64-bit), running under Windows >= 8 x64 (build 9200).
+# This code is offered under the GNU GENERAL PUBLIC LICENSE, version 3,
+# from 29 June 2007.
 # ------------------------------------------------------------------------------
 
 
@@ -59,8 +66,8 @@ theme_map <- function(base_size = 9, base_family = "") {
 }
 
 # directories and options
-wd1 <- "C:\\Users\\tmeehan\\Documents\\Github\\inlaSVCBC\\code"
-wd2 <- "C:\\Users\\tmeehan\\Documents\\Github\\inlaSVCBC\\code"
+wd1 <- "[your_working_directory_with_necessary_input_files]"
+wd2 <- "[your_working_directory_with_necessary_input_files]"
 options(scipen=9999999)
 options(max.print=99999)
 options(stringsAsFactors=F)
@@ -286,8 +293,6 @@ pit2 <- ggplot(data=pit1, aes(x=PIT)) +
 # for(i in cell2){
 #   print(cell_ts(i))
 # }
-#
-#
 # # ----------------------------------------------------------------------------
 
 
@@ -366,8 +371,8 @@ grid_p1 <- ggplot() +
   geom_sf(data=bcr_sf, fill="gray40", col="gray40") +
   geom_sf(data=grid1, aes(fill=number_circles), col="gray40", size=0.3) +
   scale_fill_gradient("A. Circles\nper cell", low = ("white"),
-                       high = ("red4"), space = "Lab", trans="log1p",
-                       na.value = "grey40", guide = "colourbar",
+                      high = ("red4"), space = "Lab", trans="log1p",
+                      na.value = "grey40", guide = "colourbar",
                       breaks=c(0,2,7,20)) +
   theme_map() +
   theme(panel.grid.major=element_line(colour="transparent"))
@@ -574,10 +579,10 @@ results1[1310, 27:29] <- results1[1311, 27:29]
 plot(results1["tempMean"])
 names(results1)
 cov_dat1 <- dplyr::select(results1, grid_id, na_id, x=centroid_x, y=centroid_y,
-                   lon, lat, bcr_num=bcr, bcr_name, state,
-                   country=country.x, alph, alph_ll, alph_ul, alph_iw,
-                   eps, eps_ll, eps_ul, eps_iw, eps_sig, tau, tau_ll,
-                   tau_ul, tau_iw, tau_sig, tempMean, popMean, geometry) %>%
+                          lon, lat, bcr_num=bcr, bcr_name, state,
+                          country=country.x, alph, alph_ll, alph_ul, alph_iw,
+                          eps, eps_ll, eps_ul, eps_iw, eps_sig, tau, tau_ll,
+                          tau_ul, tau_iw, tau_sig, tempMean, popMean, geometry) %>%
   mutate(nLat=lat,
          tempMeanC=tempMean,
          popMeanP25=((popMean+1)/1000)^0.25,
@@ -638,7 +643,6 @@ cov_dat1$fix_fit <- out3$summary.fixed$mean[1] +
   cov_dat1$nLat*out3$summary.fixed$mean[2] +
   cov_dat1$tempMeanC*out3$summary.fixed$mean[3] +
   cov_dat1$popMeanP25*out3$summary.fixed$mean[4]
-
 ggplot(data=cov_dat1, aes(x=fit, y=tau)) +
   geom_point() + geom_abline(slope=1, intercept=0) # with car component
 ggplot(data=cov_dat1, aes(x=fix_fit, y=tau)) +
@@ -687,7 +691,7 @@ apply(fixed_samp, 2, quantile, prob=c(0.025, 0.5, 0.975))
 # make lat effects
 fixed_samp <- as.matrix(fixed_samp)
 newdat <- expand.grid(nLat=seq(min(cov_dat1$nLat, na.rm=T),
-                                   max(cov_dat1$nLat, na.rm=T), length=50),
+                               max(cov_dat1$nLat, na.rm=T), length=50),
                       tempMeanC=mean(cov_dat1$tempMeanC, na.rm=T),
                       popMeanP25=mean(cov_dat1$popMeanP25, na.rm=T))
 xmat <- model.matrix(~ nLat + tempMeanC + popMeanP25, data=newdat)

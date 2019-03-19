@@ -1,6 +1,13 @@
 # cbc with car model -----------------------------------------------------------
-# this is code for running an ICAR SVC model on CBC data.
-# data to run the code can be found at https://github.com/tmeeha/inlaSVCBC
+# authors: Tim Meehan, Nicole Michel, Haavard Rue
+# date: 19 March 2019
+# code version: version 1.0
+# description: This is code for running an ICAR SVC model using CBC data.
+# Data to run the code can be found at https://github.com/tmeeha/inlaSVCBC.
+# This code runs on R version 3.3.1 (2016-06-21), platform 
+# x86_64-w64-mingw32/x64 (64-bit), running under Windows >= 8 x64 (build 9200).
+# This code is offered under the GNU GENERAL PUBLIC LICENSE, version 3,
+# from 29 June 2007.
 # ------------------------------------------------------------------------------
 
 
@@ -59,8 +66,8 @@ theme_map <- function(base_size = 9, base_family = "") {
 }
 
 # directories and options
-wd1 <- "C:\\Users\\tmeehan\\Documents\\Github\\inlaSVCBC\\code"
-wd2 <- "C:\\Users\\tmeehan\\Documents\\Github\\inlaSVCBC\\code"
+wd1 <- "[your_working_directory_with_necessary_input_files]"
+wd2 <- "[your_working_directory_with_necessary_input_files]"
 options(scipen=9999999)
 options(max.print=99999)
 options(stringsAsFactors=F)
@@ -286,8 +293,6 @@ pit2 <- ggplot(data=pit1, aes(x=PIT)) +
 # for(i in cell2){
 #   print(cell_ts(i))
 # }
-#
-#
 # # ----------------------------------------------------------------------------
 
 
@@ -638,7 +643,6 @@ cov_dat1$fix_fit <- out3$summary.fixed$mean[1] +
   cov_dat1$nLat*out3$summary.fixed$mean[2] +
   cov_dat1$tempMeanC*out3$summary.fixed$mean[3] +
   cov_dat1$popMeanP25*out3$summary.fixed$mean[4]
-
 ggplot(data=cov_dat1, aes(x=fit, y=tau)) +
   geom_point() + geom_abline(slope=1, intercept=0) # with car component
 ggplot(data=cov_dat1, aes(x=fix_fit, y=tau)) +
