@@ -1,6 +1,6 @@
 ---
 title: 'Building a Spatially Varying Coefficient Model in Continuous Space Using R-INLA'
-author: "Timothy D. Meehan and Your Name Goes Here"
+author: "Timothy D. Meehan and Elias T. Krainski"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -10,7 +10,7 @@ output:
     toc_float: true
 ---
 
-```{r setup, include=FALSE, cache=TRUE}
+```{r setup, include=FALSE, cache=TRUE, fig.align='center'}
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, error=FALSE, message=FALSE)
 ```
 
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, error=FALSE, message=FALSE)
 
 Spatially varying coefficient models (SVCs, Gelfand et al. 2003) are often used to model data when relationships between dependent and independent variables are not uniform across space, a common situation when exploring phenomena across large spatial extents (Finley 2011). Meehan et al. (2019) described an SVC model to evaluate continent-scaled variation in bird abundance trends. The SVC model used in that analysis employed discrete aerial units (100 km grid cells), with spatial structure described by neighborhood matrices and spatial relationships described by an intrinsic conditional autoregressive model (Besag 1974). The online supplement for the paper included code for building the model using the `R-INLA` package (Rue et al. 2009) for the `R` statistical programming language (R Core Team 2021). Both the manuscript and code can be accessed at <https://github.com/tmeeha/inlaSVCBC>.
 
-In this vignette, we will describe how to build an SVC model similar to that described in Meehan et al. (2019), but within a continuous-space framework. This model will be computed using the simultaneous partial differential equation (SPDE) approach of Lindgren et al. (2011, 2022), implemented in the `R-INLA` package for `R`. The SPDE approach employs a computationally efficient, continuously indexed approximation of a Gaussian random field with parameters directly comparable to those of a Matérn covariance function. The benefits of a continuous-space versus a discrete-space SVC include the potential for finer resolution estimation and prediction, a better understanding of the range of spatial correlation, and a reduction in boundary effects associated with discreet-space analyses.
+In this vignette, we will describe how to build an SVC model similar to that described in Meehan et al. (2019), but within a continuous-space framework. This model will be computed using the stochastic partial differential equation (SPDE) approach of Lindgren et al. (2011, 2022), implemented in the `R-INLA` package for `R`. The SPDE approach employs a computationally efficient approximation of a Gaussian random field with parameters directly comparable to those of a Matérn covariance function. The benefits of a continuous-space versus a discrete-space SVC include the potential for finer resolution estimation and prediction, a better understanding of the range of spatial correlation, and a reduction in boundary effects associated with discreet-space analyses.
 
 We build the model using a subset of the data described in Meehan et al. (2019). Specifically, we use counts of American Robin (*Turdus migratorius*) from south central North America collected between 1987 and 2016 during the Audubon Christmas Bird Count (CBC). The overall goal of the analysis is to produce spatially explicit estimates of annual relative abundance as well as long-term relative abundance trends for robins that account for spatial and temporal variation in count effort.  
 
@@ -123,11 +123,11 @@ all_coords <- as.matrix(st_coordinates(count_dat))
 
 ## SPDE components
 
-Computing a continuous-space model with `R-INLA` using the SPDE approach requires construction of four distinct sets of data and model objects (Blangiardo and Cameletti 2015, Krainski et al. 2018). First, we create a **modeling mesh**, which is a representation of the continuous spatial surface based on triangulation of the modeled region. Here, the same mesh will get reused for each of the spatial and spatio-temporal terms in the model. Second, we construct an **SPDE model object** that specifies properties of the spatial model. Again, we will use the same SPDE object for each of the spatial terms in the model. Third, we create **named index sets** that identify data locations and mesh nodes for use in model construction, computation, and output extraction. Note that a separate set of indices needs to be constructed for each spatial term in the model. Fourth, we construct **projector matrices** or **A matrices** that create formulaic mappings between the observed data locations and the mesh nodes. Again, note that a separate set of projector matrices needs to be constructed for each spatial term in the model. The four corresponding INLA functions for these steps are: `inla.mesh.2D()`, `inla.spde2.pcmatern()`, `inla.spde.make.index()`, and `inla.spde.make.A()`.
+Computing a continuous-space model with `R-INLA` using the SPDE approach requires construction of four distinct sets of data and model objects (Blangiardo and Cameletti 2015, Krainski et al. 2018). First, we create a **modeling mesh**, which is considered for a representation of the continuous spatial surface based on triangulation of the modeled region. Here, the same mesh will get reused for each of the spatial terms in the model. Second, we construct an **SPDE model object** that specifies properties of the spatial model. Again, we will use the same SPDE object for each of the spatial terms in the model. Third, we create **named index sets** that identify data locations and mesh nodes for use in model construction, computation, and output extraction. Note that a separate set of indices needs to be constructed for each spatial term in the model. Fourth, we construct **projector matrices** or **A matrices** that create formulaic mappings between the observed data locations and the mesh nodes. Again, note that a separate set of projector matrices needs to be constructed for each spatial term in the model. The four corresponding INLA functions for these steps are: `inla.mesh.2D()`, `inla.spde2.pcmatern()`, `inla.spde.make.index()`, and `inla.spde.make.A()`.
 
 ## Modeling mesh
 
-There are things to consider when constructing a mesh (Lindgren and Rue 2015, Blangiardo and Cameletti 2015, Krainski et al. 2018, Bakka et al. 2018). In constructing one, we balance a trade-off between capturing fine-scaled features of the Gaussian random field and long model computing times. Here, we create a non-convex hull around the count sites, and then build a triangular mesh by specifying minimum and maximum edge lengths within and slightly outside the hull.
+There are several things to consider when constructing a mesh (Lindgren and Rue 2015, Blangiardo and Cameletti 2015, Krainski et al. 2018, Bakka et al. 2018). In constructing one, we balance a trade-off between capturing fine-scaled features of the Gaussian random field and computing times. Here, we create a non-convex hull around the count sites, and then build a triangular mesh by specifying minimum and maximum edge lengths within and slightly outside the hull.
 
 ```{r mesh, warning=F, message=F, fig.pos='t', fig.align='center'}
 # make a hull and mesh for spatial model
@@ -144,12 +144,13 @@ ggplot() + gg(data=mesh) +
 
 ## SPDE model object
 
-Next we create an SPDE object that will describe the model for the spatial relationships between mesh nodes. Here we assume a Gaussian random field characterized with a Matérn covariance function with penalized complexity priors (Simpson et al. 2017) for the practical range (distance where spatial correlation approaches 0.1) and variation explained by the function (Fuglstad et al. 2019). The prior for the spatial range is set such that the probability of a range exceeding 500 km is 0.5. The prior for the variance explained by the spatial effect is set such that the probability of a standard deviation exceeding 1 is 0.5 (Krainski et al. 2018).
+Next we create an SPDE object to define the model smoothness, to provide prior distributions for the variance and range parameters and the mesh. Here we assume a Gaussian random field characterized with a Matérn covariance function with penalized complexity priors (Simpson et al. 2017) for the practical range (distance where spatial correlation approaches 0.1) and variation explained by the function (Fuglstad et al. 2019). The prior for the spatial range is set such that the probability of a range exceeding 500 km is 0.5. The prior for the variance explained by the spatial effect is set such that the probability of a standard deviation exceeding 1 is 0.5 (Krainski et al. 2018). If one wants to constrain this kind of spatial effect to sum to zero, `constr=T` should be added at this stage.
 
 ```{r spde}
 # make spde
 spde <- inla.spde2.pcmatern(mesh=mesh, prior.rang=c(500, 0.5), prior.sigma=c(1, 0.5)) 
 ```
+
 
 ## Index sets
 
@@ -179,23 +180,26 @@ A_tau <- inla.spde.make.A(mesh=mesh, loc=all_coords,
 
 With the SPDE method, there are several data structures that need to be bundled and used for analysis of the spatial model. There is the observed response at the count sites, the covariate values at the count sites, and the indices and mapping of those data to the modeling mesh. All of this information gets bundled into a data stack for model analysis using the `inla.stack()` function. This function is a very flexible and can be difficult to understand at first. See Blandgiardo and Cameletti (2015) and Gomez-Rubio (2020) for practical information on how to use it.
 
-The first argument to the function, shown below, is the `tag` name for the stack. In this case we are including observed data for model estimation, so we name the stack 'obs'. The next argument, `data`, specifies the response variable. Here we have a single response variable called 'count'. We tell the stacking function that observed counts reside in the 'count_dat' data set. The next argument, `effects`, is used to specify the model predictors. These are defined using the observed data for non-spatial predictors, and using the named index sets for the spatial predictors. The last argument, `A`, asks for a list of projector matrices or A matrices for the predictor variables. We did not need to make a projector for $\kappa_s$, because it is not defined as a spatial parameter. Nevertheless, we add a value of 1 for two reasons. First, the value serves as a simple multiplier for the effect during model computations. Second, the value serves as a way for the stacking function to match the number of A matrices with the number of effects -- if there are 4 effects, then there must be four entries for `A`. Note that if there were more than one non-spatial predictor in the model, whether a grouped random intercept or a global fixed effect, then each one would be given its own value of 1 during this step. And note that the order of the A matrices must match the order of the effects.
+The first argument to the function, shown below, is the `tag` name for the stack. In this case we are including observed data for model estimation, so we name the stack 'obs'. The next argument, `data`, specifies the response variable. Here we have a single response variable called 'count'. We tell the stacking function that observed counts reside in the 'count_dat' data set. The next argument, `effects`, is used to specify the model predictors. These are defined using the observed data for non-spatial predictors, and using the named index sets for the spatial predictors. The last argument, `A`, asks for a list of projector matrices or A matrices for the predictor variables. We did not need to make a projector for $\kappa_s$, because it is not defined as a spatial parameter. Nevertheless, we add a value of 1 because it is the value that will be multiplied by the effect during model computations and serves as a way for the stacking function to match the number of A matrices with the number of effects -- if there are 4 effects, then there must be four entries for `A`. Note that if there were more than one non-spatial predictor in the model, whether a grouped random intercept or a global fixed effect, then each one would be given its own value of 1 during this step. And note that the order of the A matrices must match the order of the effects.
 
 ```{r stack1}
 # stack observed data
 stack_fit <- inla.stack(
   tag = 'obs',
   data = list(count = as.vector(count_dat$count)), # response from data frame
-  effects = list(kappa = count_dat$site_idx, # predictors from data frame 
+  effects = list(data.frame(intercept=1, 
+                            kappa = count_dat$site_idx), # predictors from data frame 
                  alpha = alpha_idx,          # or index sets if spatial
                  eps = eps_idx,
                  tau = tau_idx),
-  A = list(1,        # projectors for predictors
-           A_alpha,  # a value of 1 is given for non-spatial terms
+  A = list(1,        # a value of 1 is given for non-spatial terms
+           A_alpha,  
            A_eps, 
            A_tau)
 )
 ```
+
+It is possible to construct additional data stacks for creating predictions, and then stack the estimation and predictions stacks together for analysis. We do not do that in this example. Information on adding prediction stacks in an SPDE context can be found in Krainski et al. (2018, chapter 2) and Moraga (2019, chapter 10).
 
 ## Model formula
 
@@ -212,16 +216,16 @@ The model described above is translated to `R-INLA` modeling syntax as:
 # formula
 svc_form <- count ~ -1 +
   f(kappa, model ="iid", constr = T, hyper = list(prec = pc_prec)) + 
-  f(alpha, model = spde, constr = F) + 
-  f(eps, model = spde, constr = F) + 
-  f(tau, model = spde, constr = F)
+  f(alpha, model = spde) + 
+  f(eps, model = spde) + 
+  f(tau, model = spde)
 ```
 
-Here, we define the response as `count`, remove the automatic global intercept with a `-1`, and then specify the other terms in the model with `f()` statements. The first `f()` statement defines $\kappa_s$, the site effect, as a normally distributed (`model="iid"`), zero-centered (`constr=T`), deviation from $\alpha_s$. The name 'kappa' given in the `f()` argument is associated with the effect 'kappa' defined in the estimation stack. The second `f()` statement defines $\alpha_s$ as a spatially varying intercept with spatial structure described by the SPDE object called 'spde'. The third `f()` statement defines $\epsilon_s$ as an SVC for the effect of count effort, with spatial structure also described by the SPDE object. The weights for this spatially structured random slope were specified during construction of the projector A matrix, `A_eps`. The fourth `f()` statement defines $\tau_s$ as an SVC for the year effect, with spatial structure described in the SPDE object. Again, the weights for this spatially structured random slope were specified during construction of the projector A matrix, `A_tau`. Again, note that the current use of the term 'weights' is different from that often encountered when defining mixed effect models in `R`. Here it is used to define covariate values, as opposed to importance values in other contexts. 
+Here, we define the response as `count`, remove the automatic global intercept with a `-1`, and then specify the other terms in the model with `f()` statements. The first `f()` statement defines $\kappa_s$, the site effect, as a normally distributed (`model="iid"`), zero-centered (`constr=T`), deviation from $\alpha_s$. The name 'kappa' given in the `f()` argument is associated with the effect 'kappa' defined in the estimation stack. The second `f()` statement defines $\alpha_s$ as a spatially varying intercept with spatial structure described by the SPDE object called 'spde'. Remember that if one wants to constrain this kind of spatial effect to sum to zero, `constr=T` should be added in the SPDE model definition rather than in the `f()` arguments. The third `f()` statement defines $\epsilon_s$ as an SVC for the effect of count effort, with spatial structure also described by the SPDE object. The weights for this spatially structured random slope were specified during construction of the projector A matrix, `A_eps`. The fourth `f()` statement defines $\tau_s$ as an SVC for the year effect, with spatial structure described in the SPDE object. The weights for this spatially structured random slope were specified during construction of the projector A matrix, `A_tau`. Again, note that the current use of the term 'weights' is to define covariate values, as opposed to importance values. 
 
 ## Run model
 
-We estimate the model with a call to `inla()`. First we set the option to use the experimental integration mode, for the sake of computing speed. In the call to `inla()`, we give the model formula, specify the negative binomial distribution for the counts, define the estimation data, and describe the location of the projector A matrix. Note that we are not generating predictions (`compute=F`). Nevertheless, the `control.preditor` argument still needs to be included so the software knows how to find the A matrices. Then we ask `inla()` to compute WAIC and CPO to evaluate model fit, and to save the information necessary for posterior sampling (`config=T`). For computing speed, we choose to use the adaptive integration strategy and Empirical Bayes estimation. The `inla()` run for this model takes about 1 minutes on a standard laptop computer.
+We estimate the model with a call to `inla()`. First we set the option to use the (new) experimental way to do internal computations, see Van Niekerk et. al. (2022), for the sake of computing speed and better numerics. In the call to `inla()`, we give the model formula, specify the negative binomial distribution for the counts, define the estimation data, and describe the location of the projector A matrix. Note that we are not generating predictions (`compute=F`). Nevertheless, the `control.preditor` argument still needs to be included so the software knows how to find the A matrices. Then we ask `inla()` to compute WAIC and CPO to evaluate model fit, and to save the information necessary for posterior sampling (`config=T`). For computing speed, we choose to use the adaptive integration strategy and Empirical Bayes estimation. The `inla()` run for this model takes about 1 minutes on a standard laptop computer. Another option is to use the Variational Bayes approximation as detailed in Van Niekerk and Rue (2021) and Van Niekerk et. al. (2022).
 
 ```{r run, eval=T, cache=TRUE}
 # run model, takes about 5 minutes
@@ -309,27 +313,13 @@ names(out_stk) <- c("alpha_mean", "alpha_sd", "epsilon_mean",
 out_stk <- mask(out_stk, as(states, "Spatial"))
 ```
 
-Finally, we plot the SVCs with the following code.
+Finally, we plot the SVC for $\tau_s$ with the following code.
 
-```{r svc_plots, warning=F, message=F}
-# alpha_s
-alpha_spdf <- as(out_stk[[1]], "SpatialPixelsDataFrame")
-alpha_df <- as.data.frame(alpha_spdf)
-colnames(alpha_df) <- c("value", "x", "y")
-pa <- ggplot(states) + geom_sf(fill=NA) + coord_sf(datum = NA) +
-  geom_tile(data=alpha_df, aes(x=x, y=y, fill=value)) +
+```{r svc_plots, warning=F, message=F, fig.width=8, fig.align='center'}
+# sites
+ps <- ggplot(states) + geom_sf() + coord_sf(datum = NA) +
+  geom_sf(data=site_map, size=0.5) +
   labs(x="", y="") +
-  scale_fill_distiller("alpha_mean", palette="Spectral") +
-  theme_bw() + geom_sf(fill=NA) 
-
-# epsilon_s
-eps_spdf <- as(out_stk[[3]], "SpatialPixelsDataFrame")
-eps_df <- as.data.frame(eps_spdf)
-colnames(eps_df) <- c("value", "x", "y")
-pe <- ggplot(states) + geom_sf(fill=NA) + coord_sf(datum = NA) +
-  geom_tile(data=eps_df, aes(x=x, y=y, fill=value)) +
-  labs(x="", y="") +
-  scale_fill_distiller("epsilon_mean", palette="Spectral") +
   theme_bw() + geom_sf(fill=NA) 
 
 # tau_s
@@ -339,17 +329,24 @@ colnames(tau_df) <- c("value", "x", "y")
 pt <- ggplot(states) + geom_sf(fill=NA) + coord_sf(datum = NA) +
   geom_tile(data=tau_df, aes(x=x, y=y, fill=value)) +
   labs(x="", y="") +
-  scale_fill_distiller("tau_mean", palette="Spectral") +
+  scale_fill_distiller("posterior\nmean\ntau_s", palette="Spectral") +
   theme_bw() + geom_sf(fill=NA) 
 
-# sites
-ps <- ggplot(states) + geom_sf() + coord_sf(datum = NA) +
-  geom_sf(data=site_map, size=0.5) +
+# tau_s sd
+tau_spdf <- as(out_stk[[6]], "SpatialPixelsDataFrame")
+tau_df <- as.data.frame(tau_spdf)
+colnames(tau_df) <- c("value", "x", "y")
+psd <- ggplot(states) + geom_sf(fill=NA) + coord_sf(datum = NA) +
+  geom_tile(data=tau_df, aes(x=x, y=y, fill=value)) +
   labs(x="", y="") +
+  scale_fill_distiller("posterior\nSD\ntau_s", palette="Spectral") +
   theme_bw() + geom_sf(fill=NA) 
 
-multiplot(ps, pa, pt, pe, cols=2)
+# plot together
+multiplot(pt, psd, cols=2)
 ```
+
+The map for the posterior mean of $\tau_s$ shows that robins have decreased in the southern part of the study area and increased in the northern part. This demonstrates how the wintering range of robins is shifting northward as winters become warmer due to climate change.
 
 ## More information
 
@@ -393,3 +390,7 @@ Simpson, D., Rue, H., Riebler, A., Martins, T.G. and Sørbye, S.H., 2017. Penali
 
 Soykan, C.U., Sauer, J., Schuetz, J.G., LeBaron, G.S., Dale, K. and Langham, G.M., 2016. Population trends for North American winter birds based on hierarchical models. Ecosphere, 7(5), p.e01351.
 
+Van Niekerk, J. and Rue, H., 2021. Correcting the Laplace Method with Variational Bayes. Journal
+of Machine Learning Research, Under review.
+
+Van Niekerk, J. and Krainski, E. T. and Rustand, D. and Rue, H., 2022. A new avenue for Bayesian inference with INLA. Submitted. 
